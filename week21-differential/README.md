@@ -1,16 +1,5 @@
 # Week 21 — Differential Abundance and Machine Learning
 
-## Schedule
-
-| Day | Time | Activity |
-|-----|------|----------|
-| Monday | 09:15–10:30 | Practical: multivariate statistics |
-| Monday | 10:45–12:00 | Practical: differential abundance (taxonomy) |
-| Tuesday | 13:15–14:15 | Practical: differential abundance (functions) |
-| Tuesday | 14:30–16:00 | Discussion: project data hand-off |
-| Friday | 09:15–10:30 | Theory: ML methods |
-| Friday | 10:45–12:00 | Practical: ML methods |
-
 > **Important:** Tuesday 14:30 is the project data hand-off session.
 
 ## Learning objectives
