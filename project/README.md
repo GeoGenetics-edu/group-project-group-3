@@ -16,7 +16,7 @@
 - `notebooks/` — exploratory analysis notebooks
 - `results/` — final outputs (git-ignored except `.gitkeep`)
 
-See [`../report/report-template.md`](../report/report-template.md) for the report template.
+Place your final report in the `../report/` folder.
 
 ## Tips
 
