@@ -12,7 +12,7 @@
 
 ## Practical instructions
 
-See the [Week 21 wiki page](https://github.com/GeoGenetics/NBIB25004U-Metagenomics-2026/wiki/Week-21).
+See the [Week 21 wiki page](https://github.com/GeoGenetics/NBIB25004U-Metagenomics-2026/wiki#week-21-practical-sessions).
 
 ## Directory layout
 
