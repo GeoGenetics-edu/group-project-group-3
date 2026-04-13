@@ -30,7 +30,7 @@
 | Name | Email |
 |------|-------|
 | Morten T. Limborg (ML) | morten.limborg@sund.ku.dk |
-| Antton Alberdi (AA) | |
+| Antton Alberdi (AA) | antton.alberdi@sund.ku.dk |
 
 ### Teaching team
 
@@ -38,11 +38,11 @@
 |------|-------|
 | Jonas Coelho Kasmanas (JK) | jonas.kasmanas@bio.ku.dk |
 | Yunjeong So (YS) | yunjeong.so@sund.ku.dk |
-| Sam Williams (SW) | |
-| Bryant Chambers (BC) | |
+| Sam Williams (SW) | sam.williams@sund.ku.dk |
+| Bryant Chambers (BC) | bryant.a.chambers@sund.ku.dk |
 | Guillermo Rangel (GR) | guillermo.pineros@sund.ku.dk |
-| Mateu Menéndez-Serra (MMS) | |
-| Amalia Bogri (AB) | |
+| Mateu Menéndez-Serra (MMS) | mateu.menendez@sund.ku.dk |
+| Amalia Bogri (AB) | amalia.bogri@sund.ku.dk |
 | Bent Petersen (BP) | bent.petersen@sund.ku.dk |
 
 ## Repository structure
