@@ -15,35 +15,22 @@
 - [Main course repository](https://github.com/GeoGenetics/NBIB25004U-Metagenomics-2026)
 - [Mjolnir HPC documentation](https://mjolnir-ucph.dk/)
 
-## Instructors
-
-### Coordinators
+## Teaching Team
 
 | Name | Email |
 |------|-------|
-| Urvish Trivedi (UT) | urvish.trivedi@bio.ku.dk |
-| Antonio Fernandez Guerra (AFG) | antonio.fernandez-guerra@sund.ku.dk |
-| Søren J. Sørensen (SJS) | sjs@bio.ku.dk |
-
-### Instructors
-
-| Name | Email |
-|------|-------|
-| Morten T. Limborg (ML) | morten.limborg@sund.ku.dk |
-| Antton Alberdi (AA) | antton.alberdi@sund.ku.dk |
-
-### Teaching team
-
-| Name | Email |
-|------|-------|
-| Jonas Coelho Kasmanas (JK) | jonas.kasmanas@bio.ku.dk |
-| Yunjeong So (YS) | yunjeong.so@sund.ku.dk |
-| Sam Williams (SW) | sam.williams@sund.ku.dk |
-| Bryant Chambers (BC) | bryant.a.chambers@sund.ku.dk |
-| Guillermo Rangel (GR) | guillermo.pineros@sund.ku.dk |
-| Mateu Menéndez-Serra (MMS) | mateu.menendez@sund.ku.dk |
-| Amalia Bogri (AB) | amalia.bogri@sund.ku.dk |
-| Bent Petersen (BP) | bent.petersen@sund.ku.dk |
+| Urvish Trivedi | urvish.trivedi@bio.ku.dk |
+| Antonio Fernandez-Guerra | antonio.fernandez-guerra@sund.ku.dk |
+| Søren J. Sørensen | sjs@bio.ku.dk |
+| Morten T. Limborg | morten.limborg@sund.ku.dk |
+| Jonas Coelho Kasmanas | jonas.kasmanas@bio.ku.dk |
+| Yunjeong So | yunjeong.so@sund.ku.dk |
+| Sam Williams | sam.williams@sund.ku.dk |
+| Bryant Chambers | bryant.chambers@sund.ku.dk |
+| Guillermo Rangel | guillermo.pineros@sund.ku.dk |
+| Mateu Menéndez-Serra | mateu.menendez@sund.ku.dk |
+| Antton Alberdi | antton.alberdi@sund.ku.dk |
+| Amalia Bogri | amalia.bogri@sund.ku.dk |
 
 ## Repository structure
 
