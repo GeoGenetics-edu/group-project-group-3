@@ -4,10 +4,10 @@
 
 | Member | KU-ID |
 |--------|-------|
-| _Name_ | _abc123_ |
-| Esin Tao | cxq772 |
-| _Name_ | _abc123_ |
-| _Name_ | _abc123_ |
+| Asger | _abc123_ |
+| Esin | cxq772 |
+| Michelle | _abc123_ |
+| Mikkel | _abc123_ |
 
 ## Links
 
