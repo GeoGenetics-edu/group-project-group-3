@@ -1,11 +1,11 @@
 # NBIB25004U — Metagenomics Analyses for Microbiomes 2026
 
-## Group _N_
+## Group 3
 
 | Member | KU-ID |
 |--------|-------|
 | _Name_ | _abc123_ |
-| _Name_ | _abc123_ |
+| Esin Tao | cxq772 |
 | _Name_ | _abc123_ |
 | _Name_ | _abc123_ |
 
