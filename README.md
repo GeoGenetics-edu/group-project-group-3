@@ -4,7 +4,7 @@
 
 | Member | KU-ID |
 |--------|-------|
-| Asger | _abc123_ |
+| Asger | _bkg567_ |
 | Esin | _cxq772_ |
 | Michelle | _abc123_ |
 | Mikkel | _abc123_ |
