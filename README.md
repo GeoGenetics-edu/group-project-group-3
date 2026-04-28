@@ -75,3 +75,8 @@ Commit early and often. Write meaningful commit messages. Make sure all group me
 /projects/course_1/people/<KU-ID>
 ```
 
+## Important script snippets
+```bash
+#SBATCH --output=/maps/projects/course_1/scratch/group3/logs/%x_%j.out
+#SBATCH --error=/maps/projects/course_1/scratch/group3/logs/%x_%j.err#!/bin/bash
+```
