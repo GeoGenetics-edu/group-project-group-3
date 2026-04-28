@@ -62,3 +62,16 @@ git pull                  # Pull your teammates' changes
 ```
 
 Commit early and often. Write meaningful commit messages. Make sure all group members contribute commits.
+
+## Directories
+```bash
+# Group directory
+/projects/course_1/scratch/group3/group-project-group-3
+
+# logs for scripts
+/projects/course_1/scratch/group3/logs
+
+# for each person
+/projects/course_1/people/<KU-ID>
+```
+
