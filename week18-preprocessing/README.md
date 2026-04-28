@@ -24,3 +24,8 @@ See the [Week 18 wiki page](https://github.com/GeoGenetics/NBIB25004U-Metagenomi
 - How does host contamination impact downstream analyses?
 - When should you use individual assemblies vs co-assemblies?
 - How do different binning tools compare?
+
+## Own notes
+```bash
+/maps/projects/course_1/people/fvb335
+```
