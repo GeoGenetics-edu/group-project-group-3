@@ -45,20 +45,87 @@
 └── report/                        # Final group report
 ```
 
-## Getting started
+## Getting started on Mjolnir
+
+You will work on the [Mjolnir HPC](https://mjolnir-ucph.dk/). Before you can clone or push to GitHub, you must set up **SSH key authentication** — GitHub no longer accepts passwords, and Mjolnir has no browser for OAuth.
+
+### One-time setup (do this once, on Mjolnir)
+
+**1. Configure your git identity**
 
 ```bash
-git clone git@github.com:geogenetics-edu/group-project-<your-team>.git
+git config --global user.name "Your Name"
+git config --global user.email "your.email@ku.dk"
+```
+
+**2. Generate an SSH key** (press Enter at every prompt, including the passphrase if you don't want one):
+
+```bash
+ssh-keygen -t ed25519 -C "your.email@ku.dk"
+```
+
+**3. Print your public key:**
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+**4. Add the key to your GitHub account:**
+
+- Copy the entire output of the previous command (starts with `ssh-ed25519 ...`)
+- Go to https://github.com/settings/ssh/new
+- Title: `Mjolnir` — Key: paste — click **Add SSH key**
+
+**5. Test the connection:**
+
+```bash
+ssh -T git@github.com
+```
+
+You should see: _"Hi `<username>`! You've successfully authenticated..."_
+
+### Cloning your group repository
+
+After the team has been created in GitHub Classroom, **always clone with the SSH URL** (not HTTPS):
+
+```bash
+git clone git@github.com:GeoGenetics-edu/group-project-<your-team>.git
 cd group-project-<your-team>
 ```
 
-## Basic git workflow
+### If you already cloned with HTTPS
+
+You will get an authentication error on `git push`. Fix it by switching the remote to SSH:
 
 ```bash
+git remote set-url origin git@github.com:GeoGenetics-edu/group-project-<your-team>.git
+git remote -v   # confirm both URLs now start with git@github.com
+```
+
+### Basic git workflow
+
+```bash
+git pull                  # Pull your teammates' changes (do this BEFORE you start working)
 git add <files>           # Stage your changes
 git commit -m "message"   # Commit with a meaningful message
 git push                  # Push to the shared repo
-git pull                  # Pull your teammates' changes
 ```
 
-Commit early and often. Write meaningful commit messages. Make sure all group members contribute commits.
+**Best practices:**
+
+- Commit early and often. Write meaningful commit messages.
+- Always `git pull` before you start working to avoid conflicts.
+- Make sure all group members contribute commits — your activity is visible.
+- Never commit large data files (FASTQ, BAM, fasta, databases). The `.gitignore` is pre-configured to block these.
+
+### Common errors
+
+| Error | Cause / Fix |
+|-------|-------------|
+| `Permission denied (publickey)` | SSH key not added to GitHub yet, or you cloned with HTTPS. Run the SSH setup above. |
+| `remote: Support for password authentication was removed` | You cloned with HTTPS. Switch to SSH with `git remote set-url`. |
+| `fatal: refusing to merge unrelated histories` | Use `git pull --allow-unrelated-histories` once, then resolve conflicts. |
+| `Updates were rejected because the remote contains work that you do not have` | Run `git pull` first, resolve conflicts, then `git push`. |
+| `Author identity unknown` | You skipped step 1. Set `user.name` and `user.email`. |
+
+If you get stuck, ask in the course channel or contact a TA.
