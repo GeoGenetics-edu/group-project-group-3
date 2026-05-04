@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --job-name=gtdbtk_classify_taxa
-#SBATCH --output=/maps/projects/course_1/people/fvb335/logs/%x_%j.out
-#SBATCH --error=/maps/projects/course_1/people/fvb335/logs/%x_%j.err
+#SBATCH --output=/maps/projects/course_1/scratch/group3/logs/%x_%j.out
+#SBATCH --error=/maps/projects/course_1/scratch/group3/logs/%x_%j.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=30
 #SBATCH --mem-per-cpu=6G         # GTDB-Tk R232 requires ≥140 GB RAM (30*6=180 GB)
 #SBATCH --time=10:00:00
 #SBATCH --mail-type=end          # send email when job ends
 #SBATCH --mail-type=fail         # send email if job fails
-#SBATCH --mail-user=jonas.kasmanas@bio.ku.dk
+#SBATCH --mail-user=bkg567@alumni.ku.dk
 #SBATCH --reservation=NBIB25004U
 #SBATCH --account=teaching
 #

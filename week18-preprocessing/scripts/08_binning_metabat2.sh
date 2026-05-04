@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --job-name=binning_metabat2
-#SBATCH --output=/maps/projects/course_1/people/fvb335/logs/%x_%j.out
-#SBATCH --error=/maps/projects/course_1/people/fvb335/logs/%x_%j.err
+#SBATCH --output=/maps/projects/course_1/scratch/group3/logs/%x_%j.out
+#SBATCH --error=/maps/projects/course_1/scratch/group3/logs/%x_%j.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=15
 #SBATCH --mem-per-cpu=10G    # memory per cpu-core
 #SBATCH --time=05:00:00
 #SBATCH --mail-type=end          # send email when job ends
 #SBATCH --mail-type=fail         # send email if job fails
-#SBATCH --mail-user=jonas.kasmanas@bio.ku.dk
+#SBATCH --mail-user=bkg567@alumni.ku.dk
 #SBATCH --reservation=NBIB25004U
 #SBATCH --account=teaching
 #

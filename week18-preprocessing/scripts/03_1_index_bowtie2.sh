@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --job-name=bowtie2_build
-#SBATCH --output=/maps/projects/course_1/people/fvb335/logs/%x_%j.out
-#SBATCH --error=/maps/projects/course_1/people/fvb335/logs/%x_%j.err
+#SBATCH --output=/maps/projects/course_1/scratch/group3/logs/%x_%j.out
+#SBATCH --error=/maps/projects/course_1/scratch/group3/logs/%x_%j.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=31
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=12:00:00
 #SBATCH --mail-type=end
 #SBATCH --mail-type=fail
-#SBATCH --mail-user=jonas.kasmanas@bio.ku.dk
+#SBATCH --mail-user=bkg567@alumni.ku.dk
 #SBATCH --reservation=NBIB25004U
 #SBATCH --account=teaching
 
