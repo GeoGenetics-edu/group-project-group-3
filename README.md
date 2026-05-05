@@ -49,7 +49,7 @@
 
 ```bash
 git clone git@github.com:geogenetics-edu/group-project-<your-team>.git
-cd group-project-<your-team>
+cd /maps/projects/course_1/scratch/group3/group-project-group-3
 ```
 
 ## Basic git workflow
