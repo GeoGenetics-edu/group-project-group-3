@@ -1,0 +1,34 @@
+# dbCAN summary (in-class reference genomes)
+# Input:    /maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/10_annotation_cazymes_ref/
+# Genomes:  3
+# Generated: 2026-05-05T13:31:14Z
+
+## Per-genome table (genome | total | GH | PL | unique_substrates)
+genome	total	GH	PL	unique_substrates
+Bacteroides_thetaiotaomicron	452	292	24	42
+Bifidobacterium_infantis	81	50	1	22
+Lactobacillus_crispatus	61	33	0	14
+
+## GH hits (genome | count)
+genome	GH_count
+Bacteroides_thetaiotaomicron	292
+Bifidobacterium_infantis	50
+Lactobacillus_crispatus	33
+
+## PL hits (genome | count)
+genome	PL_count
+Bacteroides_thetaiotaomicron	24
+Bifidobacterium_infantis	1
+Lactobacillus_crispatus	0
+
+## Total recommendations (genome | count)
+genome	total_recs
+Bacteroides_thetaiotaomicron	452
+Bifidobacterium_infantis	81
+Lactobacillus_crispatus	61
+
+## Unique substrates (genome | count)
+genome	unique_substrates
+Bacteroides_thetaiotaomicron	42
+Bifidobacterium_infantis	22
+Lactobacillus_crispatus	14
