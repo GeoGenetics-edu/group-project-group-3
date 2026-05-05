@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=13_4_cazyme_summary_mags
-#SBATCH --output=/maps/projects/course_1/scratch/<group_#>/logs/dbcan_summary_%j.out
-#SBATCH --error=/maps/projects/course_1/scratch/<group_#>/logs/dbcan_summary_%j.err
+#SBATCH --output=/maps/projects/course_1/scratch/group3/logs/13_4_cazyme_summary_mags_%j.out
+#SBATCH --error=/maps/projects/course_1/scratch/group3/logs/13_4_cazyme_summary_mags_%j.err
 #SBATCH --cpus-per-task=15
 #SBATCH --mem-per-cpu=6G
 #SBATCH --time=10:00:00
@@ -26,7 +26,7 @@
 # on the MAG name (column 1, user_genome). Missing matches → taxonomy = "n/a".
 
 # ---- PATHS ----
-DBCAN_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/10_annotation_cazymes/"
+DBCAN_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/10_annotation_cazymes_ref/"
 GTDBTK_FILE="/maps/projects/course_1/people/fvb335/08_taxa_gtdbtk/classify/gtdbtk.bac120.summary.tsv"
 SUMMARY_FILE="$DBCAN_DIR/cazyme_summary_mags.tsv"
 
