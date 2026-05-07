@@ -1,0 +1,87 @@
+# dbCAN summary
+# Input:    /maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/10_annotation_cazymes/
+# Taxonomy: /maps/projects/course_1/people/fvb335/08_taxa_gtdbtk/classify/gtdbtk.bac120.summary.tsv
+# Genomes:  67
+# Generated: 2026-05-07T13:12:33Z
+
+## MAGs per bodysite
+bodysite	n_MAGs
+gut_adult	43
+gut_infant	17
+vaginal	7
+
+## Per-MAG table (bodysite | genome | total | GH | PL | unique_substrates | taxonomy)
+bodysite	genome	total	GH	PL	unique_substrates	taxonomy
+gut_adult	ERR2641635_bin.10	99	47	0	18	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Ruminococcaceae;g__Gemmiger;s__Gemmiger qucibialis
+gut_adult	ERR2641635_bin.13	73	27	2	10	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Lachnospira;s__Lachnospira eligens_A
+gut_adult	ERR2641635_bin.32	82	27	6	8	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Lachnospira;s__Lachnospira sp000436535
+gut_adult	ERR2641635_bin.34	83	44	11	19	d__Bacteria;p__Bacillota;c__Clostridia;o__UBA1381;f__UBA1381;g__Hominilimicola;s__Hominilimicola fabiformis
+gut_adult	ERR2641635_bin.35	86	57	0	23	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Roseburia;s__Roseburia faecis
+gut_adult	ERR2641635_bin.38	127	71	2	23	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Acetatifactor;s__Acetatifactor acetigignens
+gut_adult	ERR2641635_bin.41	35	10	0	6	d__Bacteria;p__Pseudomonadota;c__Alphaproteobacteria;o__RF32;f__CAG-239;g__CAZU01;s__CAZU01 sp000432275
+gut_adult	ERR2641635_bin.49	138	89	0	30	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Roseburia;s__Roseburia intestinalis
+gut_adult	ERR2641635_bin.52	140	78	0	23	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Gallintestinimicrobium;s__Gallintestinimicrobium propionicum
+gut_adult	ERR2641635_bin.57	44	14	0	9	d__Bacteria;p__Bacillota;c__Clostridia;o__TANB77;f__CAG-508;g__Merdicola;s__Merdicola sp001915925
+gut_adult	ERR2641635_bin.5	93	58	0	16	d__Bacteria;p__Bacillota_I;c__Bacilli_A;o__Erysipelotrichales;f__Coprobacillaceae;g__Faecalibacillus;s__Faecalibacillus intestinalis
+gut_adult	ERR2641635_bin.6	101	48	1	17	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Eubacterium_G;s__Eubacterium_G sp000435815
+gut_adult	ERR2641677_bin.10	34	17	0	8	d__Bacteria;p__Actinomycetota;c__Coriobacteriia;o__Coriobacteriales;f__Coriobacteriaceae;g__Collinsella;s__Collinsella sp014871645
+gut_adult	ERR2641677_bin.17	98	66	0	20	d__Bacteria;p__Actinomycetota;c__Actinomycetes;o__Actinomycetales;f__Bifidobacteriaceae;g__Bifidobacterium;s__Bifidobacterium pseudocatenulatum
+gut_adult	ERR2641677_bin.21	72	27	3	10	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Lachnospira;s__Lachnospira rogosae
+gut_adult	ERR2641677_bin.2	41	10	0	6	d__Bacteria;p__Pseudomonadota;c__Alphaproteobacteria;o__RF32;f__CAG-239;g__Scatacola_A;s__Scatacola_A faecigallinarum
+gut_adult	ERR2641677_bin.25	43	19	0	9	d__Bacteria;p__Bacillota_I;c__Bacilli_A;o__Erysipelotrichales;f__Erysipelotrichaceae;g__Holdemanella;s__Holdemanella sp900556915
+gut_adult	ERR2641677_bin.38	77	54	0	23	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Coprococcus;s__Coprococcus aceti
+gut_adult	ERR2641677_bin.48	79	55	0	26	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Ruminococcaceae;g__Hominimerdicola;s__Hominimerdicola aceti
+gut_adult	ERR2641677_bin.49	121	63	1	11	d__Bacteria;p__Verrucomicrobiota;c__Verrucomicrobiia;o__Verrucomicrobiales;f__Akkermansiaceae;g__Akkermansia;s__Akkermansia muciniphila
+gut_adult	ERR2641677_bin.4	96	64	0	20	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Blautia_A;s__Blautia_A wexlerae
+gut_adult	ERR2641677_bin.5	108	64	1	21	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Acetatifactor;s__Acetatifactor intestinalis
+gut_adult	ERR2641677_bin.53	21	7	0	4	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Oscillospiraceae;g__Hominicoprocola;s__Hominicoprocola sp934835795
+gut_adult	ERR2641677_bin.66	40	12	0	4	d__Bacteria;p__Bacteroidota;c__Bacteroidia;o__Bacteroidales;f__Rikenellaceae;g__Alistipes;s__Alistipes putredinis
+gut_adult	ERR2641677_bin.68	49	23	0	5	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Acutalibacteraceae;g__Ruminococcoides;s__Ruminococcoides intestinale
+gut_adult	ERR2641677_bin.71	79	56	0	23	d__Bacteria;p__Actinomycetota;c__Actinomycetes;o__Actinomycetales;f__Bifidobacteriaceae;g__Bifidobacterium;s__Bifidobacterium longum
+gut_adult	ERR2641733_bin.10	87	57	0	24	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Coprococcus;s__Coprococcus aceti
+gut_adult	ERR2641733_bin.18	23	8	0	5	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Oscillospiraceae;g__Vescimonas;s__Vescimonas sp000435975
+gut_adult	ERR2641733_bin.19	32	8	0	3	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Oscillospiraceae;g__CAG-103;s__CAG-103 sp934589185
+gut_adult	ERR2641733_bin.23	156	112	9	29	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Anthropogastromicrobium;s__Anthropogastromicrobium aceti
+gut_adult	ERR2641733_bin.27	96	36	3	13	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Ruminococcaceae;g__Gemmiger;s__Gemmiger formicilis
+gut_adult	ERR2641733_bin.34	30	13	0	8	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Oscillospiraceae;g__F23-B02;s__F23-B02 sp900545805
+gut_adult	ERR2641733_bin.42	58	31	0	12	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__CAG-272;g__CAG-390;s__CAG-390 sp000437015
+gut_adult	ERR2641733_bin.46	51	25	0	11	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Anaerostipes;s__Anaerostipes hadrus
+gut_adult	ERR2641733_bin.5	132	86	0	22	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Fusicatenibacter;s__Fusicatenibacter saccharivorans
+gut_adult	ERR2641733_bin.52	134	85	1	28	d__Bacteria;p__Bacillota;c__Clostridia;o__Christensenellales;f__Aristaeellaceae;g__UBA11524;s__UBA11524 sp000437595
+gut_adult	ERR2641733_bin.54	68	27	7	12	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Lachnospira;s__Lachnospira sp003537285
+gut_adult	ERR2641733_bin.55	44	18	0	6	d__Bacteria;p__Bacteroidota;c__Bacteroidia;o__Bacteroidales;f__Rikenellaceae;g__Alistipes;s__Alistipes putredinis
+gut_adult	ERR2641733_bin.66	124	66	0	19	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Ruminococcaceae;g__Gemmiger;s__Gemmiger qucibialis
+gut_adult	ERR2641733_bin.70	57	22	0	9	d__Bacteria;p__Actinomycetota;c__Coriobacteriia;o__Coriobacteriales;f__Coriobacteriaceae;g__Collinsella;s__Collinsella sp965141635
+gut_adult	ERR2641733_bin.71	74	51	0	25	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Ruminococcaceae;g__Hominimerdicola;s__Hominimerdicola sp900539095
+gut_adult	ERR2641733_bin.73	71	48	0	17	d__Bacteria;p__Bacillota;c__Clostridia;o__Oscillospirales;f__Acutalibacteraceae;g__CAG-217;s__CAG-217 sp000436335
+gut_adult	ERR2641733_bin.87	287	186	11	37	d__Bacteria;p__Bacteroidota;c__Bacteroidia;o__Bacteroidales;f__Bacteroidaceae;g__Phocaeicola;s__Phocaeicola vulgatus
+gut_infant	SRR8692206_bin.10	57	39	0	19	d__Bacteria;p__Actinomycetota;c__Actinomycetes;o__Actinomycetales;f__Actinomycetaceae;g__Pauljensenia;s__Pauljensenia radingae_A
+gut_infant	SRR8692206_bin.12	157	117	0	35	d__Bacteria;p__Bacillota;c__Clostridia;o__Clostridiales;f__Clostridiaceae;g__Clostridium;s__Clostridium neonatale
+gut_infant	SRR8692206_bin.14	48	13	0	7	d__Bacteria;p__Pseudomonadota;c__Gammaproteobacteria;o__Enterobacterales;f__Pasteurellaceae;g__Haemophilus_D;s__Haemophilus_D sp030405845
+gut_infant	SRR8692206_bin.18	54	36	0	12	d__Bacteria;p__Bacillota;c__Bacilli;o__Lactobacillales;f__Lactobacillaceae;g__Lactobacillus;s__Lactobacillus gasseri
+gut_infant	SRR8692206_bin.30	32	4	0	2	d__Bacteria;p__Bacillota;c__Negativicutes;o__Veillonellales;f__Veillonellaceae;g__Veillonella;s__Veillonella parvula_K
+gut_infant	SRR8692207_bin.10	367	226	14	46	d__Bacteria;p__Bacteroidota;c__Bacteroidia;o__Bacteroidales;f__Bacteroidaceae;g__Phocaeicola;s__Phocaeicola dorei
+gut_infant	SRR8692207_bin.11	75	52	0	19	d__Bacteria;p__Bacillota;c__Bacilli;o__Lactobacillales;f__Streptococcaceae;g__Streptococcus;s__Streptococcus pasteurianus
+gut_infant	SRR8692207_bin.13	37	4	0	2	d__Bacteria;p__Actinomycetota;c__Coriobacteriia;o__Coriobacteriales;f__Eggerthellaceae;g__Eggerthella;s__Eggerthella lenta
+gut_infant	SRR8692207_bin.17	82	44	2	21	d__Bacteria;p__Bacillota;c__Bacilli;o__Lactobacillales;f__Lactobacillaceae;g__Lacticaseibacillus;s__Lacticaseibacillus rhamnosus
+gut_infant	SRR8692207_bin.25	123	101	0	23	d__Bacteria;p__Actinomycetota;c__Actinomycetes;o__Actinomycetales;f__Bifidobacteriaceae;g__Bifidobacterium;s__Bifidobacterium scardovii
+gut_infant	SRR8692207_bin.28	81	25	1	8	d__Bacteria;p__Bacteroidota;c__Bacteroidia;o__Bacteroidales;f__Marinifilaceae;g__Butyricimonas;s__Butyricimonas faecihominis
+gut_infant	SRR8692207_bin.5	77	38	0	14	d__Bacteria;p__Actinomycetota;c__Actinomycetes;o__Propionibacteriales;f__Propionibacteriaceae;g__Cutibacterium;s__Cutibacterium avidum
+gut_infant	SRR8692213_bin.13	70	35	0	16	d__Bacteria;p__Bacillota;c__Bacilli;o__Lactobacillales;f__Streptococcaceae;g__Streptococcus;s__Streptococcus parasanguinis_I
+gut_infant	SRR8692213_bin.15	275	164	13	25	d__Bacteria;p__Bacteroidota;c__Bacteroidia;o__Bacteroidales;f__Bacteroidaceae;g__Bacteroides;s__Bacteroides caccae
+gut_infant	SRR8692213_bin.22	277	189	10	36	d__Bacteria;p__Bacteroidota;c__Bacteroidia;o__Bacteroidales;f__Bacteroidaceae;g__Bacteroides;s__Bacteroides uniformis
+gut_infant	SRR8692213_bin.23	44	4	3	2	d__Bacteria;p__Actinomycetota;c__Coriobacteriia;o__Coriobacteriales;f__Eggerthellaceae;g__Eggerthella;s__Eggerthella lenta
+gut_infant	SRR8692213_bin.6	68	24	0	10	d__Bacteria;p__Bacillota;c__Bacilli;o__Lactobacillales;f__Streptococcaceae;g__Streptococcus;s__Streptococcus salivarius_E
+vaginal	SRR059458_bin.10	40	14	0	7	d__Bacteria;p__Actinomycetota;c__Actinomycetes;o__Actinomycetales;f__Actinomycetaceae;g__Mobiluncus;s__Mobiluncus curtisii
+vaginal	SRR059458_bin.28	21	1	0	2	d__Bacteria;p__Bacillota;c__Negativicutes;o__Veillonellales;f__Megasphaeraceae;g__Megasphaera;s__Megasphaera lornae
+vaginal	SRR059458_bin.30	20	1	0	2	d__Bacteria;p__Actinomycetota;c__Coriobacteriia;o__Coriobacteriales;f__Eggerthellaceae;g__Berryella;s__Berryella vaginalis
+vaginal	SRR059458_bin.8	22	5	0	3	d__Bacteria;p__Bacillota;c__Negativicutes;o__Veillonellales;f__Dialisteraceae;g__Dialister;s__Dialister sp001553355
+vaginal	SRR059459_bin.16	32	9	0	3	d__Bacteria;p__Bacillota;c__Clostridia;o__Lachnospirales;f__Lachnospiraceae;g__Moryella;s__Moryella sp002892395
+vaginal	SRR059459_bin.29	23	5	0	3	d__Bacteria;p__Bacillota;c__Negativicutes;o__Veillonellales;f__Dialisteraceae;g__Dialister;s__Dialister sp001553355
+vaginal	SRR059459_bin.5	36	12	0	7	d__Bacteria;p__Actinomycetota;c__Actinomycetes;o__Actinomycetales;f__Actinomycetaceae;g__Mobiluncus;s__Mobiluncus curtisii
+
+## Totals per bodysite (bodysite | n_MAGs | total_GH | total_PL)
+bodysite	n_MAGs	total_GH	total_PL
+gut_adult	43	1986	58
+gut_infant	17	1115	43
+vaginal	7	47	0
