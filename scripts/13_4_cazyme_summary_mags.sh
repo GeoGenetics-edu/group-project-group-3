@@ -7,7 +7,7 @@
 #SBATCH --time=10:00:00
 #SBATCH --mail-type=end          # send email when job ends
 #SBATCH --mail-type=fail         # send email if job fails
-#SBATCH --mail-user=xkz321@alumni.ku.dk
+#SBATCH --mail-user=bkg567@alumni.ku.dk
 #SBATCH --reservation=NBIB25004U
 #SBATCH --account=teaching
 
@@ -26,7 +26,7 @@
 # on the MAG name (column 1, user_genome). Missing matches → taxonomy = "n/a".
 
 # ---- PATHS ----
-DBCAN_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/10_annotation_cazymes_ref/"
+DBCAN_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/10_annotation_cazymes/"
 GTDBTK_FILE="/maps/projects/course_1/people/fvb335/08_taxa_gtdbtk/classify/gtdbtk.bac120.summary.tsv"
 SUMMARY_FILE="$DBCAN_DIR/cazyme_summary_mags.tsv"
 

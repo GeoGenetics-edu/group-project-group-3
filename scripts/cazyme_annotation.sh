@@ -7,7 +7,7 @@
 #SBATCH --time=10:00:00
 #SBATCH --mail-type=end          # send email when job ends
 #SBATCH --mail-type=fail         # send email if job fails
-#SBATCH --mail-user=cxq772@ku.alumni.dk
+#SBATCH --mail-user=bkg567@ku.alumni.dk
 #SBATCH --reservation=NBIB25004U
 #SBATCH --account=teaching
 
@@ -15,8 +15,8 @@
 # After class: swap to your HQ-MAG Bakta output and drop the _ref suffix:
 #   INPUT_DIR="/maps/projects/course_1/scratch/<group_#>/<group-project-group-#>/09_annotation_bakta/"
 #   OUT_DIR="/maps/projects/course_1/scratch/<group_#>/<group-project-group-#>/10_annotation_cazymes/"
-INPUT_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/09_annotation_bakta_ref/"
-OUT_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/10_annotation_cazymes_ref/"
+INPUT_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/09_annotation_bakta/"
+OUT_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/10_annotation_cazymes/"
 DB="/maps/projects/course_1/data/dbcan_db"
 
 export PATH=/opt/shared_software/shared_envmodules/conda/dbcan-5.2.8/bin:$PATH
