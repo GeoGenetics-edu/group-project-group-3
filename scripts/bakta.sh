@@ -15,8 +15,8 @@
 # After class: swap to your HQ MAGs and drop the _ref suffix:
 #   INPUT_DIR="/maps/projects/course_1/scratch/<group_#>/<group-project-group-#>/07_1_hq_mags/"
 #   OUT_DIR="/maps/projects/course_1/scratch/<group_#>/<group-project-group-#>/09_annotation_bakta/"
-INPUT_DIR="/maps/projects/course_1/data/ref_genomes"
-OUT_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/09_annotation_bakta_ref/"
+INPUT_DIR="/projects/course_1/scratch/group3/group-project-group-3/week19-mags/hq_mags"
+OUT_DIR="/maps/projects/course_1/scratch/group3/group-project-group-3/week19-mags/09_annotation_bakta/"
 DB="/maps/projects/course_1/data/bakta_db_light"
 
 export PATH=/opt/shared_software/shared_envmodules/conda/bakta-1.11.3/bin:$PATH
