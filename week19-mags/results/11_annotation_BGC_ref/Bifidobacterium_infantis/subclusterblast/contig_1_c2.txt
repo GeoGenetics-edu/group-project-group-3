@@ -1,0 +1,40 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+GMFAEM_00478	530263	531133	-	Binding-protein-dependent transport system inner membrane protein	
+GMFAEM_00479	531132	531900	-	hypothetical protein	
+GMFAEM_00480	531919	532837	+	Extracellular solute-binding protein	
+GMFAEM_00481	533020	533680	-	Two component transcriptional regulator, LuxR family	
+GMFAEM_00482	533676	534918	-	histidine kinase	
+GMFAEM_00483	534947	535310	-	DUF4190 domain-containing protein	
+GMFAEM_00484	535331	535730	-	DUF6591 domain-containing protein	
+GMFAEM_00485	535760	537185	-	ABC3 transporter permease C-terminal domain-containing protein	
+GMFAEM_00486	537177	537981	-	Lipoprotein-releasing system ATP-binding protein LolD	
+GMFAEM_00487	538077	538671	-	hypothetical protein	
+GMFAEM_00488	538744	538867	-	hypothetical protein	
+GMFAEM_00489	538863	541521	-	Lanthionine synthetase C family protein	
+GMFAEM_00490	541583	542327	-	LuxR family transcriptional regulator	
+GMFAEM_00491	542301	543663	-	histidine kinase	
+GMFAEM_00492	543688	545125	-	ABC3 transporter permease C-terminal domain-containing protein	
+GMFAEM_00493	545124	545841	-	Putative ABC transporter ATP-binding component	
+GMFAEM_00494	546047	547826	-	Multidrug resistance ABC transporter ATP-binding/permease protein BmrA	
+GMFAEM_00495	547822	548251	-	Microcin J25-processing protein McjB C-terminal domain-containing protein	
+GMFAEM_00496	548247	548520	-	PqqD family protein	
+GMFAEM_00497	548506	550096	-	asparagine synthase (glutamine-hydrolyzing)	
+GMFAEM_00498	550150	550279	-	hypothetical protein	
+GMFAEM_00499	550450	551134	-	ATP-binding cassette domain-containing protein	
+GMFAEM_00500	551266	551974	-	Two component transcriptional regulator, LuxR family	
+GMFAEM_00501	551990	553316	-	histidine kinase	
+GMFAEM_00502	553584	553854	+	hypothetical protein	
+GMFAEM_00503	554513	555056	+	Stage II sporulation protein M	
+GMFAEM_00504	555064	555610	+	DUF805 domain-containing protein	
+GMFAEM_00505	555593	556535	+	ABC transporter ATP-binding protein	
+GMFAEM_00506	556531	557320	+	ABC transporter permease	
+GMFAEM_00507	558170	558713	+	hypothetical protein	
+GMFAEM_00508	558729	559401	+	hypothetical protein	
+
+
+Significant hits: 
+
+
+Details:
