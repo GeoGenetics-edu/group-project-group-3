@@ -1,0 +1,29 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+HFNEPP_04884	6141509	6142781	+	Cardiolipin synthase	
+HFNEPP_04885	6142818	6143613	+	Thymidylate synthase	
+HFNEPP_04886	6143617	6144112	+	Dihydrofolate reductase	
+HFNEPP_04887	6144131	6144611	-	Transcriptional regulator, AsnC family	
+HFNEPP_04888	6144763	6146041	+	Peptidase M64 N-terminal domain-containing protein	
+HFNEPP_04889	6146221	6146758	+	N-acetyltransferase domain-containing protein	
+HFNEPP_04890	6146938	6147409	-	Biopolymer transport protein ExbD/TolR	
+HFNEPP_04891	6147412	6148006	-	Biopolymer transporter ExbD	
+HFNEPP_04892	6148041	6148527	-	Transmembrane protein	
+HFNEPP_04893	6148533	6149337	-	MotA/TolQ/ExbB proton channel domain-containing protein	
+HFNEPP_04895	6149620	6150397	-	Deoxyribonuclease yabD	
+HFNEPP_04896	6150390	6151107	-	HEPN domain-containing protein	
+HFNEPP_04897	6151122	6152097	-	Geranylgeranyl diphosphate synthase type II	
+HFNEPP_04898	6152167	6152851	-	TonB C-terminal domain-containing protein	
+HFNEPP_04899	6153073	6153763	+	Cytidylate kinase	
+HFNEPP_04900	6153781	6154651	+	4-hydroxy-3-methylbut-2-enyl diphosphate reductase	
+HFNEPP_04901	6154779	6155760	+	ATP-dependent 6-phosphofructokinase	
+HFNEPP_04902	6155891	6157238	-	hypothetical protein	
+HFNEPP_04903	6157332	6158727	-	hypothetical protein	
+HFNEPP_04904	6158794	6161185	-	TonB-dependent receptor	
+
+
+Significant hits: 
+
+
+Details:

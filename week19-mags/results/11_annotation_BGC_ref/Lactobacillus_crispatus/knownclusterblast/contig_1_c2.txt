@@ -1,0 +1,32 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+MMEBIB_01389	1367447	1368203	-	Serine/threonine protein phosphatase	
+MMEBIB_01390	1368207	1369569	-	16S rRNA (cytosine(967)-C(5))-methyltransferase	
+MMEBIB_01391	1369519	1370464	-	Methionyl-tRNA formyltransferase	
+MMEBIB_01392	1370476	1372876	-	Primosomal protein N'	
+MMEBIB_01393	1372926	1373151	-	hypothetical protein	
+MMEBIB_01394	1373156	1373771	-	Guanylate kinase	
+MMEBIB_01395	1373878	1374316	-	ASCH domain-containing protein	
+MMEBIB_01396	1374308	1375991	-	DNA repair protein RecN	
+MMEBIB_01397	1376001	1376814	-	23S rRNA (Cytidine1920-2'-O)/16S rRNA (Cytidine1409-2'-O)-methyltransferase	
+MMEBIB_01398	1376814	1377684	-	Polyprenyl synthetase	
+MMEBIB_01399	1377686	1377929	-	Exodeoxyribonuclease 7 small subunit	
+MMEBIB_01400	1377909	1379277	-	Exodeoxyribonuclease 7 large subunit	
+MMEBIB_01401	1379263	1380115	-	Bifunctional protein FolD	
+MMEBIB_01402	1380171	1380567	-	Transcription antitermination protein NusB	
+MMEBIB_01403	1380566	1380998	-	Alkaline shock protein 23	
+MMEBIB_01404	1381016	1381586	-	Elongation factor P 2	
+MMEBIB_01405	1381666	1382776	-	X-Pro dipeptidase	
+MMEBIB_01406	1382892	1383183	-	Large ribosomal subunit protein bL27	
+MMEBIB_01407	1383201	1383513	-	Large ribosomal subunit protein bL21	
+MMEBIB_01408	1383671	1384508	-	DUF2179 domain-containing protein	
+MMEBIB_01409	1384591	1385968	-	V-type sodium ATP synthase subunit	
+MMEBIB_01410	1386126	1386519	-	hypothetical protein	
+MMEBIB_01411	1386653	1386833	-	Tautomerase	
+
+
+Significant hits: 
+
+
+Details:

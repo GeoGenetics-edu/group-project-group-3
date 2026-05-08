@@ -1,0 +1,87 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+HFNEPP_04538	5688599	5689640	-	Sialic acid synthase	
+HFNEPP_04539	5689639	5690389	-	Acylneuraminate cytidylyltransferase	
+HFNEPP_04540	5690397	5691657	-	hypothetical protein	
+HFNEPP_04541	5691610	5693095	-	Polysaccharide biosynthesis protein C-terminal domain-containing protein	
+HFNEPP_04542	5693297	5693441	-	hypothetical protein	
+HFNEPP_04543	5693437	5694559	-	2-aminoethylphosphonate--pyruvate transaminase	
+HFNEPP_04544	5694568	5695693	-	3D-(3,5/4)-trihydroxycyclohexane-1,2-dione hydrolase	
+HFNEPP_04545	5695709	5697011	-	Fosfomycin biosynthesis bifunctional protein Fom1	
+HFNEPP_04546	5697031	5697751	-	hypothetical protein	
+HFNEPP_04547	5697814	5698963	-	Polysaccharide chain length determinant N-terminal domain-containing protein	
+HFNEPP_04548	5698973	5701343	-	Capsule biosynthesis protein	
+HFNEPP_04549	5701402	5701717	-	hypothetical protein	
+HFNEPP_04550	5701781	5702360	-	NusG-like N-terminal domain-containing protein	
+
+
+Significant hits: 
+1. BGC0001411.3	polysaccharide B
+2. BGC0000806.5	phosphonoglycans
+3. BGC0000938.5	fosfomycin
+4. BGC0000807.3	phosphonoglycans
+
+
+Details:
+
+>>
+1. BGC0001411.3
+Source: polysaccharide B
+Type: saccharide
+Number of proteins with BLAST hits to this cluster: 4
+Cumulative BLAST score: 2370.0
+
+Table of genes, locations, strands and annotations of subject cluster:
+
+Table of Blast hits (query gene, subject gene, %identity, blast score, %coverage, e-value):
+HFNEPP_04543	AAG26467.1	83	637	98.12332439678283	2.54e-232
+HFNEPP_04544	AAG26466.1	76	592	100.0	1.91e-214
+HFNEPP_04545	AAG26465.1	88	779	100.0	2.07e-286
+HFNEPP_04546	AAG26464.1	71	362	100.0	3.44e-128
+
+
+
+>>
+2. BGC0000806.5
+Source: phosphonoglycans
+Type: saccharide
+Number of proteins with BLAST hits to this cluster: 2
+Cumulative BLAST score: 850.0
+
+Table of genes, locations, strands and annotations of subject cluster:
+
+Table of Blast hits (query gene, subject gene, %identity, blast score, %coverage, e-value):
+HFNEPP_04544	AHL24480.1	48	336	96.2566844919786	1.6e-113
+HFNEPP_04545	AHL24479.1	60	514	97.92147806004618	8.28e-182
+
+
+
+>>
+3. BGC0000938.5
+Source: fosfomycin
+Type: other:aminocoumarin
+Number of proteins with BLAST hits to this cluster: 2
+Cumulative BLAST score: 846.0
+
+Table of genes, locations, strands and annotations of subject cluster:
+
+Table of Blast hits (query gene, subject gene, %identity, blast score, %coverage, e-value):
+HFNEPP_04544	ACG70832.1	46	332	94.6524064171123	5.07e-112
+HFNEPP_04545	ACG70831.1	59	514	98.38337182448036	7.47e-182
+
+
+
+>>
+4. BGC0000807.3
+Source: phosphonoglycans
+Type: saccharide
+Number of proteins with BLAST hits to this cluster: 2
+Cumulative BLAST score: 827.0
+
+Table of genes, locations, strands and annotations of subject cluster:
+
+Table of Blast hits (query gene, subject gene, %identity, blast score, %coverage, e-value):
+HFNEPP_04544	Snas_5664	49	342	96.2566844919786	8.35e-116
+HFNEPP_04545	Snas_5665	56	485	98.84526558891456	2.74e-170
+

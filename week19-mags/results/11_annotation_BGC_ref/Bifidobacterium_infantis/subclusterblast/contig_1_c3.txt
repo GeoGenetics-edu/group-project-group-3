@@ -1,0 +1,22 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+GMFAEM_00976	1122498	1123161	+	Ribosome hibernation promoting factor	
+GMFAEM_00977	1123322	1126217	+	Protein translocase subunit SecA	
+GMFAEM_00978	1126343	1126976	-	SGNH hydrolase-type esterase domain-containing protein	
+GMFAEM_00979	1127199	1128246	+	Anthranilate phosphoribosyltransferase	
+GMFAEM_00980	1128242	1128899	-	Membrane associated protein	
+GMFAEM_00981	1128959	1129661	+	Acyltransferase family protein	
+GMFAEM_00982	1129704	1131975	-	hypothetical protein	
+GMFAEM_00983	1132118	1133201	-	Probably bifunctional short chain isoprenyl diphosphate synthase	
+GMFAEM_00984	1133407	1134070	+	DUF4192 domain-containing protein	
+GMFAEM_00985	1134272	1135667	+	hypothetical protein	
+GMFAEM_00986	1135724	1138043	+	DNA topoisomerase (ATP-hydrolyzing)	
+GMFAEM_00987	1138209	1139436	+	Major facilitator superfamily (MFS) profile domain-containing protein	
+GMFAEM_00988	1139509	1140472	+	hypothetical protein	
+
+
+Significant hits: 
+
+
+Details:

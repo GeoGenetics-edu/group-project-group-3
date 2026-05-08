@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" type="text/css" href="../../css/style.css">
+
+<script type="text/javascript" src="../../js/jquery.js"></script>
+<script type="text/javascript" src="../../js/jquery.tablesorter.min.js"></script>
+
+<script type="text/javascript" >
+var counter = 1;
+function addInput(divName){
+     var newdiv = document.createElement('div');
+     newdiv.innerHTML = "<b>Locus " + (counter + 1) + "</b><br> GenBank accession: <input type='text' required name='myInputs[]'> Start nt: <input type='number' name='myStartCoords[]' placeholder='N/A'> End nt: <input type='number' name='myEndCoords[]' placeholder='N/A'> <br><br>";
+     document.getElementById(divName).appendChild(newdiv);
+     counter++;
+}
+</script>
+
+<script>
+$(document).ready(function()
+    {
+        $("#myTable").tablesorter();
+    }
+);
+
+</script>
+<style>
+table {
+    border-width: thin;
+    border-spacing: 2px;
+    border-style: none;
+    border-color: black;
+}
+</style>
+</head>
+<body>
+    <table id="myTable" class="tablesorter" border=1>
+    <thead>
+    <tr>
+        <th>MIBiG Protein</th>
+        <th>Description</th>
+        <th>MIBiG Cluster</th>
+        <th>MiBiG Product</th>
+        <th>% ID</th>
+        <th>% Coverage</th>
+        <th>BLAST Score</th>
+        <th>E-value</th>
+    </tr>
+    </thead>
+    <tbody>
+    
+          <tr>
+              <td>AFJ23822.1</td>
+              <td>sigma-54-dependent_transcriptional_regulator</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0001838.4">BGC0001838.4</a></td>
+              <td>NRPS:Type I</td>
+              <td>53.0</td>
+              <td>50.4</td>
+              <td>233.0</td>
+              <td>5.02e-73</td>
+          </tr>
+    
+          <tr>
+              <td>ABK32252.1</td>
+              <td>Amb4</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0000014.5">BGC0000014.5</a></td>
+              <td>PKS</td>
+              <td>49.0</td>
+              <td>57.6</td>
+              <td>231.0</td>
+              <td>6.26e-71</td>
+          </tr>
+    
+          <tr>
+              <td>ABK32284.1</td>
+              <td>Jer4</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0000080.5">BGC0000080.5</a></td>
+              <td>PKS</td>
+              <td>49.0</td>
+              <td>57.6</td>
+              <td>229.0</td>
+              <td>1.74e-70</td>
+          </tr>
+    
+          <tr>
+              <td>AAY93414.1</td>
+              <td>sigma-54_dependent_transcriptional_regulator</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0000413.5">BGC0000413.5</a></td>
+              <td>NRPS:Type I</td>
+              <td>50.0</td>
+              <td>52.8</td>
+              <td>225.0</td>
+              <td>5.85e-70</td>
+          </tr>
+    
+          <tr>
+              <td>WP_004526108.1</td>
+              <td>sigma-54_dependent_transcriptional_regulator</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0001588.3">BGC0001588.3</a></td>
+              <td>saccharide</td>
+              <td>45.0</td>
+              <td>59.1</td>
+              <td>206.0</td>
+              <td>1.73e-61</td>
+          </tr>
+    
+          <tr>
+              <td>WP_012493293.1</td>
+              <td>sigma-54_dependent_transcriptional_regulator</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0001589.3">BGC0001589.3</a></td>
+              <td>saccharide</td>
+              <td>43.0</td>
+              <td>60.8</td>
+              <td>200.0</td>
+              <td>3.92e-59</td>
+          </tr>
+    
+          <tr>
+              <td>AAY32960.1</td>
+              <td>putative_regulatory_protein</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0001093.3">BGC0001093.3</a></td>
+              <td>NRPS:Type I+PKS</td>
+              <td>39.0</td>
+              <td>58.8</td>
+              <td>196.0</td>
+              <td>1.36e-57</td>
+          </tr>
+    
+          <tr>
+              <td>AAY32957.1</td>
+              <td>putative_regulatory_protein</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0001093.3">BGC0001093.3</a></td>
+              <td>NRPS:Type I+PKS</td>
+              <td>39.0</td>
+              <td>58.8</td>
+              <td>192.0</td>
+              <td>4.92e-56</td>
+          </tr>
+    
+          <tr>
+              <td>QDA77042.1</td>
+              <td>sigma-54_dependent_transcriptional_regulator</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0002025.4">BGC0002025.4</a></td>
+              <td>NRPS:Type I+PKS</td>
+              <td>43.0</td>
+              <td>54.7</td>
+              <td>183.0</td>
+              <td>1.81e-52</td>
+          </tr>
+    
+          <tr>
+              <td>AAY93396.1</td>
+              <td>sigma-54_dependent_transcriptional_activator_PeaR</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0000413.5">BGC0000413.5</a></td>
+              <td>NRPS:Type I</td>
+              <td>36.0</td>
+              <td>67.8</td>
+              <td>177.0</td>
+              <td>3.42e-49</td>
+          </tr>
+    
+          <tr>
+              <td>ABK32246.1</td>
+              <td>histidine_kinase_response_regulator</td>
+              <td><a target="_new" href="https://mibig.secondarymetabolites.org/go/BGC0000014.5">BGC0000014.5</a></td>
+              <td>PKS</td>
+              <td>50.0</td>
+              <td>39.0</td>
+              <td>166.0</td>
+              <td>1.11e-47</td>
+          </tr>
+    
+    </tbody>
+  </table>
+</body>

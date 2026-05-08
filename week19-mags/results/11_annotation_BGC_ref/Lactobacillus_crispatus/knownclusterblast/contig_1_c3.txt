@@ -1,0 +1,56 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+MMEBIB_01820	1811741	1811969	-	hypothetical protein	
+MMEBIB_01821	1812118	1812220	-	hypothetical protein	
+MMEBIB_01822	1812238	1812661	-	hypothetical protein	
+MMEBIB_01823	1812694	1812889	-	hypothetical protein	
+MMEBIB_01824	1813021	1813231	-	HTH cro/C1-type domain-containing protein	
+MMEBIB_01825	1813245	1813785	-	DUF2975 domain-containing protein	
+MMEBIB_01826	1814633	1815668	-	Integrase catalytic domain-containing protein	
+MMEBIB_01827	1815825	1816065	-	hypothetical protein	
+MMEBIB_01828	1816068	1816293	-	hypothetical protein	
+MMEBIB_01829	1816544	1816778	-	hypothetical protein	
+MMEBIB_01830	1816813	1817017	-	hypothetical protein	
+MMEBIB_01831	1817088	1817493	-	DUF3278 domain-containing protein	
+MMEBIB_01832	1817666	1817879	-	Immunity protein	
+MMEBIB_01833	1817902	1818712	-	DNA-binding response regulator	
+MMEBIB_01834	1818695	1820039	-	Histidine kinase	
+MMEBIB_01835	1820045	1820180	-	hypothetical protein	
+
+
+Significant hits: 
+1. BGC0000619.3	gassericin T
+2. BGC0001602.3	gassericin-T
+
+
+Details:
+
+>>
+1. BGC0000619.3
+Source: gassericin T
+Type: ribosomal:RiPP
+Number of proteins with BLAST hits to this cluster: 2
+Cumulative BLAST score: 651.0
+
+Table of genes, locations, strands and annotations of subject cluster:
+
+Table of Blast hits (query gene, subject gene, %identity, blast score, %coverage, e-value):
+MMEBIB_01833	BAM09401.1	58	298	97.39776951672863	6.64e-102
+MMEBIB_01834	BAM09400.1	46	353	97.31543624161074	3.27e-118
+
+
+
+>>
+2. BGC0001602.3
+Source: gassericin-T
+Type: ribosomal:RiPP
+Number of proteins with BLAST hits to this cluster: 2
+Cumulative BLAST score: 651.0
+
+Table of genes, locations, strands and annotations of subject cluster:
+
+Table of Blast hits (query gene, subject gene, %identity, blast score, %coverage, e-value):
+MMEBIB_01833	BBE52943.1	58	298	97.39776951672863	6.64e-102
+MMEBIB_01834	BBE52942.1	46	353	97.31543624161074	3.27e-118
+

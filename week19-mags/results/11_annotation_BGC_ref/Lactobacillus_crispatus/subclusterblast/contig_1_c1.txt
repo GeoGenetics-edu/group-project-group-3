@@ -1,0 +1,18 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+MMEBIB_00649	616623	616764	+	hypothetical protein	
+MMEBIB_00650	616808	619379	+	hypothetical protein	
+MMEBIB_00651	619353	620271	+	hypothetical protein	
+MMEBIB_00652	620248	621166	+	hypothetical protein	
+MMEBIB_00653	621155	622448	+	hypothetical protein	
+MMEBIB_00654	622461	623520	+	hypothetical protein	
+MMEBIB_00655	624162	624495	+	hypothetical protein	
+MMEBIB_00656	624506	624704	+	hypothetical protein	
+MMEBIB_00657	624883	625165	-	DUF1827 domain-containing protein	
+
+
+Significant hits: 
+
+
+Details:
