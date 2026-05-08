@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=antiSMASH
-#SBATCH --output=/maps/projects/course_1/scratch/<group_#>/logs/antiSMASH_%j.out
-#SBATCH --error=/maps/projects/course_1/scratch/<group_#>/logs/antiSMASH_%j.err
+#SBATCH --output=/maps/projects/course_1/scratch/group3/logs/antiSMASH_%j.out
+#SBATCH --error=/maps/projects/course_1/scratch/group3/logs/antiSMASH_%j.err
 #SBATCH --cpus-per-task=8
 #SBATCH --mail-type=end
 #SBATCH --mail-type=fail
