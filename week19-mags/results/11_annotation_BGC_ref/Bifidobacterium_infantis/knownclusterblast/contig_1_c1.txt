@@ -1,0 +1,18 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+GMFAEM_00447	497776	499996	-	hypothetical protein	
+GMFAEM_00448	500177	501440	-	histidine kinase	
+GMFAEM_00449	501436	502099	-	Response regulator protein VraR	
+GMFAEM_00450	502323	502731	+	Lactococcin 972 family bacteriocin	
+GMFAEM_00451	502806	504759	+	ABC transporter permease	
+GMFAEM_00452	504789	505437	+	ABC transporter	
+GMFAEM_00453	505490	505895	+	hypothetical protein	
+GMFAEM_00454	506012	506288	-	hypothetical protein	
+GMFAEM_00455	506303	506810	+	hypothetical protein	
+
+
+Significant hits: 
+
+
+Details:
