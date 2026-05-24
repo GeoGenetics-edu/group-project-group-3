@@ -8,6 +8,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
+
 ```{r}
 library(phyloseq)
 library(vegan)
@@ -23,3 +24,7 @@ library(lmerTest)
 library(broom.mixed)
 library(microbiome)
 ```
+
+```{r}
+ps <- readRDS("../data/molecular_ecology_17695.rds")
+``` 
