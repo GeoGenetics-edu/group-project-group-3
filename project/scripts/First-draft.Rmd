@@ -26,5 +26,54 @@ library(microbiome)
 ```
 
 ```{r}
-ps <- readRDS("../data/molecular_ecology_17695.rds")
+cat_data <- readRDS("../data/molecular_ecology_17695.rds")
+
+
+ps <- cat_data$phyloseq
+sample_data(ps)
+rank_names(ps)
+sample_variables(ps)
 ``` 
+
+```{r}
+ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
+ps_pa <- transform_sample_counts(
+  ps,
+  function(x){ifelse(x > 0, 1, 0)}
+)
+
+sample_sums(ps_pa)
+```
+```{r calculate-bray-distance}
+bray_dist <- distance(
+  ps_rel,
+  method = "bray"
+)
+
+#bray_dist
+```
+```{r calculate-jaccard-distance}
+jaccard_dist <- distance(
+  ps_pa,
+  method = "jaccard"
+)
+
+#jaccard_dist
+```
+```{r pcoa-bray-basic, fig.width=8, fig.height=5}
+ord_bray <- ordinate(
+  ps_rel,
+  method = "PCoA",
+  distance = bray_dist
+)
+
+plot_ordination(
+  ps_rel,
+  ord_bray,
+  type = "origin",
+  color = "location"
+)
+```
+```{r}
+plot_scree(ord_bray)
+```
