@@ -23,60 +23,74 @@ library(lme4)
 library(lmerTest)
 library(broom.mixed)
 library(microbiome)
+library(biomformat)
 ```
 
-```{r}
-IBD_path <- "../data/D003093_Colitis,_Ulcerative/species/phyloseq.RData"
-ps_IBD <- get(load(IBD_path))
-
-ps <- ps_IBD
-sample_data(ps)
-rank_names(ps)
-sample_variables(ps)
-
-
-``` 
-
-```{r, include=FALSE}
-ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
-ps_pa <- transform_sample_counts(
-  ps,
-  function(x){ifelse(x > 0, 1, 0)}
-)
-
-sample_sums(ps_pa)
+```{r load-data, include=FALSE}
+IBD_path <- "../data/D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
+ps <- get(load(IBD_path))  # rename directly to ps
 ```
 
-```{r calculate-bray-distance, include=FALSE}
-bray_dist <- distance(
-  ps_rel,
-  method = "bray"
-)
-
-#bray_dist
+```{r explore-missing, include=FALSE}
+# Missing value check - diagnostics only
+sample_data(ps) %>%
+  as_tibble() %>%
+  summarise(across(everything(), ~sum(is.na(.) | . == "" | . == "NA")))
 ```
-```{r calculate-jaccard-distance, include=FALSE}
-jaccard_dist <- distance(
-  ps_pa,
-  method = "jaccard"
-)
 
-#jaccard_dist
-```
-```{r pcoa-bray-basic, fig.width=8, fig.height=5}
-ord_bray <- ordinate(
-  ps_rel,
-  method = "PCoA",
-  distance = bray_dist
-)
+```{r filter-samples}
+sd <- as(sample_data(ps), "data.frame")
 
-plot_ordination(
-  ps_rel,
-  ord_bray,
-  type = "origin",
-  color = "Sex"
-)
+samples_to_keep <- sd %>%
+  rownames_to_column("SampleID") %>%
+  filter(if_all(c("Nr..reads.sequenced", "Host.age"), ~!is.na(.))) %>%
+  filter(Sex %in% c("Male", "Female")) %>%
+ # filter(Recent.antibiotics.use %in% c("N", "Y")) %>%
+  pull(SampleID)
+
+cat("Samples kept:", length(samples_to_keep), "\n")
+cat("Samples removed:", nsamples(ps) - length(samples_to_keep), "\n")
 ```
-```{r}
-plot_scree(ord_bray)
+
+```{r build-phyloseq, include=FALSE}
+sample_data(ps)$keep <- sample_names(ps) %in% samples_to_keep
+ps_clean <- subset_samples(ps, keep == TRUE)
+sample_data(ps_clean)$keep <- NULL
+sample_data(ps)$keep <- NULL
+ps_clean <- prune_taxa(taxa_sums(ps_clean) > 0, ps_clean)
+
+# Note: data is relative abundance - Observed/Chao1 not valid
+ps_rel <- transform_sample_counts(ps_clean, function(x) x / sum(x))
+ps_pa  <- transform_sample_counts(ps_clean, function(x) ifelse(x > 0, 1, 0))
+```
+
+```{r distances, include=FALSE}
+bray_dist    <- distance(ps_rel, method = "bray")
+jaccard_dist <- distance(ps_pa,  method = "jaccard")
+```
+
+```{r pcoa-plot, fig.width=8, fig.height=5}
+ord_bray <- ordinate(ps_rel, method = "PCoA", distance = bray_dist)
+
+plot_ordination(ps_rel, ord_bray, type = "samples",
+                color = "Host.age", shape = "Sex") +
+  geom_point(size = 3) +
+  scale_color_viridis_c() +
+  theme_bw()
+```
+
+```{r alpha-diversity}
+alpha_div <- estimate_richness(ps_clean, measures = "Shannon") %>%
+  rownames_to_column("SampleID") %>%
+  left_join(
+    as(sample_data(ps_clean), "data.frame") %>% rownames_to_column("SampleID"),
+    by = "SampleID"
+  )
+
+# Sex - Wilcoxon (2 groups)
+wilcox.test(Shannon ~ Sex, data = alpha_div)
+kruskal.test(Shannon ~ Country, data = alpha_div)
+
+# Host.age - Spearman correlation
+cor.test(alpha_div$Shannon, alpha_div$Host.age, method = "spearman")
 ```
