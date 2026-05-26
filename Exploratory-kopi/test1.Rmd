@@ -94,6 +94,9 @@ ps_IBD_genus_sampled <- sample_ps(ps_IBD_genus, FUN = sample, size = 80)
 plot_bar(ps_IBD_genus_sampled, fill = "Genus") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
   theme(axis.text.x = element_blank())
+
+ps_IBD_sick <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D003093'))
+ps_IBD_healthy <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D006262'))
 ```
 
 ```{r}
@@ -107,4 +110,7 @@ ps_Diabetes_genus_sampled <- sample_ps(ps_Diabetes_genus, FUN = sample, size = 8
 plot_bar(ps_Diabetes_genus_sampled, fill = "Genus") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
   theme(axis.text.x = element_blank())
+
+ps_Diabetes_sick <- subset_samples(ps_Diabetes_genus, Disease.MESH.ID %in% c('D003924'))
+ps_IBD_healthy <- subset_samples(ps_Diabetes_genus, Disease.MESH.ID %in% c('D006262'))
 ```
