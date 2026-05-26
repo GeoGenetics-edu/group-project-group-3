@@ -1,0 +1,116 @@
+---
+title: "Test1"
+output: html_document
+date: "2026-05-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r}
+library(phyloseq)
+library(vegan)
+library(dplyr)
+library(tibble)
+library(purrr)
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(ggh4x)
+library(lme4)
+library(lmerTest)
+library(broom.mixed)
+library(microbiome)
+```
+
+```{r}
+sample_ps <- function(ps, FUN = sample, ...){
+  ids <- sample_names(ps)
+  sampled_ids <- FUN(ids, ...)
+  ps <- prune_samples(sampled_ids, ps)
+  return(ps)
+}
+```
+
+
+```{r}
+HIV_path <- "D015497_HIV-1/species/phyloseq.RData"
+Kidney_path <- "D007674_Kidney_Diseases/species/phyloseq.RData"
+Diabetes_path <- "D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
+IBD_path <- "D003093_Colitis,_Ulcerative/species/phyloseq.RData"
+```
+
+```{r}
+# Load the phyloseq objects
+ps_HIV <- get(load(HIV_path))
+ps_Kidney <- get(load(Kidney_path))
+ps_Diabetes <- get(load(Diabetes_path))
+ps_IBD <- get(load(IBD_path))
+```
+
+
+```{r cars}
+ps_HIV_rel <- transform_sample_counts(ps_HIV, function(x) x / sum(x))
+otu_HIV_rel <- as(otu_table(ps_HIV_rel), "matrix") %>% t() %>% as.data.frame()
+meta_HIV_rel <- as(sample_data(ps_HIV_rel), "matrix") %>% as.data.frame()
+tax_HIV_rel <- as(tax_table(ps_HIV_rel), "matrix") %>% as.data.frame()
+
+ps_HIV_genus <- tax_glom(ps_HIV_rel, taxrank = "Species")
+
+plot_bar(ps_HIV_genus, fill = "Species") +
+  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
+  theme(axis.text.x = element_blank())
+
+ps_HIV_sick <- subset_samples(ps_HIV_genus, Disease.MESH.ID == "D015497")
+
+#plot_bar(ps_HIV_sick, fill = "Species") +
+#  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
+#  theme(axis.text.x = element_blank())
+```
+
+```{r}
+# Kidney is boring, because it is amplicon data
+
+```
+
+```{r}
+ps_IBD_rel <- transform_sample_counts(ps_IBD, function(x) x / sum(x))
+otu_IBD_rel <- as(otu_table(ps_IBD_rel), "matrix") %>% t() %>% as.data.frame()
+meta_IBD_rel <- as(sample_data(ps_IBD_rel), "matrix") %>% as.data.frame()
+tax_IBD_rel <- as(tax_table(ps_IBD_rel), "matrix") %>% as.data.frame()  
+
+ps_IBD_genus <- tax_glom(ps_IBD_rel, taxrank = "Genus")
+
+ps_IBD_genus_sampled <- sample_ps(ps_IBD_genus, FUN = sample, size = 80)
+
+plot_bar(ps_IBD_genus_sampled, fill = "Genus") +
+  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
+  theme(axis.text.x = element_blank())
+
+ps_IBD_sick <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D003093'))
+ps_IBD_healthy <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D006262'))
+```
+
+```{r}
+ps_Diabetes_rel <- transform_sample_counts(ps_Diabetes, function(x) x / sum(x))
+otu_Diabetes_rel <- as(otu_table(ps_Diabetes_rel), "matrix")
+meta_Diabetes_rel <- as(sample_data(ps_Diabetes_rel), "matrix") %>% as.data.frame()
+tax_Diabetes_rel <- as(tax_table(ps_Diabetes_rel), "matrix") %>% as.data.frame()
+
+ps_Diabetes_genus <- tax_glom(ps_Diabetes_rel, taxrank = "Genus")
+ps_Diabetes_genus_sampled <- sample_ps(ps_Diabetes_genus, FUN = sample, size = 80)
+plot_bar(ps_Diabetes_genus_sampled, fill = "Genus") +
+  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
+  theme(axis.text.x = element_blank())
+
+ps_Diabetes_sick <- subset_samples(ps_Diabetes_genus, Disease.MESH.ID %in% c('D003924'))
+ps_IBD_healthy <- subset_samples(ps_Diabetes_genus, Disease.MESH.ID %in% c('D006262'))
+```
