@@ -71,7 +71,7 @@ plot_ordination(
   ps_rel,
   ord_bray,
   type = "origin",
-  color = "location"
+  color = "origin"
 )
 ```
 ```{r}
