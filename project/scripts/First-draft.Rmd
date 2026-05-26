@@ -33,6 +33,9 @@ ps <- cat_data$phyloseq
 sample_data(ps)
 rank_names(ps)
 sample_variables(ps)
+
+ps_domestic <- subset_samples(ps, origin %in% c('Domestic'))
+ps_feral <- subset_samples(ps, origin %in% c('Feral'))
 ``` 
 
 ```{r}
