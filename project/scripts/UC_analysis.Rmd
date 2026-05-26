@@ -42,29 +42,28 @@ sample_ps <- function(ps, FUN = sample, ...){
 
 
 ```{r}
-path <- "../data/D003934_Diabetes_Mellitus,_T/species/phyloseq.RData"
+path <- "../data/D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
 
 ps <- get(load(path))
 sample_data(ps)
 ```
 
 ```{r}
-ps_IBD_rel <- transform_sample_counts(ps_IBD, function(x) x / sum(x))
-otu_IBD_rel <- as(otu_table(ps_IBD_rel), "matrix") %>% t() %>% as.data.frame()
-meta_IBD_rel <- as(sample_data(ps_IBD_rel), "matrix") %>% as.data.frame()
-tax_IBD_rel <- as(tax_table(ps_IBD_rel), "matrix") %>% as.data.frame()  
+ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
+otu_rel <- as(otu_table(ps_rel), "matrix") %>% t() %>% as.data.frame()
+meta_rel <- as(sample_data(ps_rel), "matrix") %>% as.data.frame()
+tax_rel <- as(tax_table(ps_rel), "matrix") %>% as.data.frame()  
 
-ps_IBD_genus <- tax_glom(ps_IBD_rel, taxrank = "Genus")
+ps_genus <- tax_glom(ps_rel, taxrank = "Genus")
 
-ps_IBD_genus_sampled <- sample_ps(ps_IBD_genus, FUN = sample, size = 80)
+ps_genus_sampled <- sample_ps(ps_genus, FUN = sample, size = 80)
 
-plot_bar(ps_IBD_genus_sampled, fill = "Genus") +
+plot_bar(ps_genus_sampled, fill = "Genus") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
   theme(axis.text.x = element_blank())
 
-ps_IBD_sick <- subset_samples(ps_IBD_genus, Sex %in% c('Male', 'Female'))
-ps_IBD_healthy <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D006262'))
+ps_IBD_sick <- subset_samples(ps_genus, Sex %in% c('Male', 'Female'))
+ps_IBD_healthy <- subset_samples(ps_genus, Disease.MESH.ID %in% c('D006262'))
 
-sum(!is.na(meta_IBD_rel['Host.age']))
 ```
 
