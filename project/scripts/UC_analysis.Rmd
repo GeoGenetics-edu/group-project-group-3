@@ -42,42 +42,9 @@ sample_ps <- function(ps, FUN = sample, ...){
 
 
 ```{r}
-HIV_path <- "D015497_HIV-1/species/phyloseq.RData"
-Kidney_path <- "D007674_Kidney_Diseases/species/phyloseq.RData"
-Diabetes_path <- "D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
-IBD_path <- "D003093_Colitis,_Ulcerative/species/phyloseq.RData"
-```
+IBD_path <- "../data/D003093_Colitis,_Ulcerative/species/phyloseq.RData"
 
-```{r}
-# Load the phyloseq objects
-ps_HIV <- get(load(HIV_path))
-ps_Kidney <- get(load(Kidney_path))
-ps_Diabetes <- get(load(Diabetes_path))
 ps_IBD <- get(load(IBD_path))
-```
-
-
-```{r cars}
-ps_HIV_rel <- transform_sample_counts(ps_HIV, function(x) x / sum(x))
-otu_HIV_rel <- as(otu_table(ps_HIV_rel), "matrix") %>% t() %>% as.data.frame()
-meta_HIV_rel <- as(sample_data(ps_HIV_rel), "matrix") %>% as.data.frame()
-tax_HIV_rel <- as(tax_table(ps_HIV_rel), "matrix") %>% as.data.frame()
-
-ps_HIV_genus <- tax_glom(ps_HIV_rel, taxrank = "Species")
-
-plot_bar(ps_HIV_genus, fill = "Species") +
-  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
-  theme(axis.text.x = element_blank())
-
-ps_HIV_sick <- subset_samples(ps_HIV_genus, Disease.MESH.ID == "D015497")
-
-#plot_bar(ps_HIV_sick, fill = "Species") +
-#  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
-#  theme(axis.text.x = element_blank())
-```
-
-```{r}
-# Kidney is boring, because it is amplicon data
 
 ```
 
@@ -99,18 +66,3 @@ ps_IBD_sick <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D003093'))
 ps_IBD_healthy <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D006262'))
 ```
 
-```{r}
-ps_Diabetes_rel <- transform_sample_counts(ps_Diabetes, function(x) x / sum(x))
-otu_Diabetes_rel <- as(otu_table(ps_Diabetes_rel), "matrix")
-meta_Diabetes_rel <- as(sample_data(ps_Diabetes_rel), "matrix") %>% as.data.frame()
-tax_Diabetes_rel <- as(tax_table(ps_Diabetes_rel), "matrix") %>% as.data.frame()
-
-ps_Diabetes_genus <- tax_glom(ps_Diabetes_rel, taxrank = "Genus")
-ps_Diabetes_genus_sampled <- sample_ps(ps_Diabetes_genus, FUN = sample, size = 80)
-plot_bar(ps_Diabetes_genus_sampled, fill = "Genus") +
-  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
-  theme(axis.text.x = element_blank())
-
-ps_Diabetes_sick <- subset_samples(ps_Diabetes_genus, Disease.MESH.ID %in% c('D003924'))
-ps_IBD_healthy <- subset_samples(ps_Diabetes_genus, Disease.MESH.ID %in% c('D006262'))
-```
