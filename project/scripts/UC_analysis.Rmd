@@ -42,10 +42,10 @@ sample_ps <- function(ps, FUN = sample, ...){
 
 
 ```{r}
-IBD_path <- "../data/D003093_Colitis,_Ulcerative/species/phyloseq.RData"
+path <- "../data/D003934_Diabetes_Mellitus,_T/species/phyloseq.RData"
 
-ps_IBD <- get(load(IBD_path))
-
+ps <- get(load(path))
+sample_data(ps)
 ```
 
 ```{r}
@@ -62,7 +62,9 @@ plot_bar(ps_IBD_genus_sampled, fill = "Genus") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
   theme(axis.text.x = element_blank())
 
-ps_IBD_sick <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D003093'))
+ps_IBD_sick <- subset_samples(ps_IBD_genus, Sex %in% c('Male', 'Female'))
 ps_IBD_healthy <- subset_samples(ps_IBD_genus, Disease.MESH.ID %in% c('D006262'))
+
+sum(!is.na(meta_IBD_rel['Host.age']))
 ```
 

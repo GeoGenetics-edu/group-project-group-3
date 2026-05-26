@@ -39,7 +39,7 @@ otu_clr <- as(otu_table(ps_clr), "matrix") %>% t() %>% as.data.frame()
 meta_clr <- as(sample_data(ps_clr), "matrix") %>% as.data.frame()
 tax_clr <- as(tax_table(ps_clr), "matrix") %>% as.data.frame()
 
-unique(meta_clr['Recent.antibiotics.use'])
+unique(meta_clr['Disease.MESH.ID'])
 ```
 
 ## Make long table
@@ -51,24 +51,51 @@ dat_clr <- otu_clr %>%
   left_join(tax_clr %>% rownames_to_column("taxon"), by = "taxon")
 ```
 
-## Test according to healthy vs sick
+## Test according to healthy vs sick, country
 ```{r}
-clr_age_adjusted_status_results <- dat_clr %>%
-  filter(body_site == "gut") %>%
+clr_country <- subset_samples(ps_clr, Country %in% c("Denmark", "Spain", "United States of America"))
+otu_clr_country <- as(otu_table(clr_country), "matrix") %>% t() %>% as.data.frame()
+meta_clr_country <- as(sample_data(clr_country), "matrix") %>% as.data.frame()
+tax_clr_country <- as(tax_table(clr_country), "matrix") %>% as.data.frame()
+
+dat_clr_country <- otu_clr_country %>%
+  rownames_to_column("sample_id") %>%
+  pivot_longer(-sample_id, names_to = "taxon", values_to = "clr") %>%
+  left_join(meta_clr %>% as("data.frame") %>% rownames_to_column("sample_id"), by = "sample_id") %>%
+  left_join(tax_clr %>% rownames_to_column("taxon"), by = "taxon")
+
+clr_status_v_country <- dat_clr_country %>%
   mutate(
-    age = factor(age, levels = c("infant", "adult")),
-    status = factor(status, levels = c("healthy", "sick"))
+    Country = factor(Country, levels = c("Denmark", "Spain", "United States of America")),
+    Status = factor(Disease.MESH.ID, levels = c("D006262", "D003093"))
   ) %>%
-  group_by(taxon, genus, species) %>%
+  group_by(taxon, Genus, Species) %>%
   group_modify(~ {
     fit <- lm(
-      clr ~ age + status,
+      clr ~ Country + Status,
       data = .x
     )
 
     broom::tidy(fit)
   }) %>%
   ungroup() %>%
-  filter(term == "ageadult") %>%
   mutate(q_value = p.adjust(p.value, method = "BH"))
+
+```
+
+```{r}
+clr_status_v_country_enriched <- clr_status_v_country %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate) %>%
+  head(10)
+
+clr_status_v_country_enriched
+```
+```{r}
+dat_clr_country %>%
+  filter(taxon == clr_status_v_country_enriched %>% slice(1) %>% pull(taxon)) %>%
+  ggplot(aes(x = Country, y = clr, fill = Country)) +
+    geom_boxplot(outlier.shape = NA) +
+    #geom_jitter(width = 0.15) +
+    theme_bw()
 ```
