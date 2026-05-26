@@ -1,0 +1,74 @@
+---
+title: "CLR_linearmodel"
+output: html_document
+---
+
+```{r}
+library(phyloseq)
+library(vegan)
+library(dplyr)
+library(tibble)
+library(purrr)
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(ggh4x)
+library(lme4)
+library(lmerTest)
+library(broom.mixed)
+```
+
+```{r}
+IBD_path <- "../data/D003093_Colitis,_Ulcerative/species/phyloseq.RData"
+
+ps_IBD <- get(load(IBD_path))
+
+ps_IBD_rel <- transform_sample_counts(ps_IBD, function(x) x / sum(x))
+otu_IBD_rel <- as(otu_table(ps_IBD_rel), "matrix") %>% t() %>% as.data.frame()
+meta_IBD_rel <- as(sample_data(ps_IBD_rel), "matrix") %>% as.data.frame()
+tax_IBD_rel <- as(tax_table(ps_IBD_rel), "matrix") %>% as.data.frame()  
+```
+
+# Compositional analysis with CLR
+```{r}
+ps_clr <- transform_sample_counts(ps_IBD, function(x) {
+  x <- x + 1e-9
+  log(x) - mean(log(x))
+})
+otu_clr <- as(otu_table(ps_clr), "matrix") %>% t() %>% as.data.frame()
+meta_clr <- as(sample_data(ps_clr), "matrix") %>% as.data.frame()
+tax_clr <- as(tax_table(ps_clr), "matrix") %>% as.data.frame()
+
+unique(meta_clr['Recent.antibiotics.use'])
+```
+
+## Make long table
+```{r}
+dat_clr <- otu_clr %>%
+  rownames_to_column("sample_id") %>%
+  pivot_longer(-sample_id, names_to = "taxon", values_to = "clr") %>%
+  left_join(meta_clr %>% as("data.frame") %>% rownames_to_column("sample_id"), by = "sample_id") %>%
+  left_join(tax_clr %>% rownames_to_column("taxon"), by = "taxon")
+```
+
+## Test according to healthy vs sick
+```{r}
+clr_age_adjusted_status_results <- dat_clr %>%
+  filter(body_site == "gut") %>%
+  mutate(
+    age = factor(age, levels = c("infant", "adult")),
+    status = factor(status, levels = c("healthy", "sick"))
+  ) %>%
+  group_by(taxon, genus, species) %>%
+  group_modify(~ {
+    fit <- lm(
+      clr ~ age + status,
+      data = .x
+    )
+
+    broom::tidy(fit)
+  }) %>%
+  ungroup() %>%
+  filter(term == "ageadult") %>%
+  mutate(q_value = p.adjust(p.value, method = "BH"))
+```
