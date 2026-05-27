@@ -29,73 +29,141 @@ meta_IBD_rel <- as(sample_data(ps_IBD_rel), "matrix") %>% as.data.frame()
 tax_IBD_rel <- as(tax_table(ps_IBD_rel), "matrix") %>% as.data.frame()  
 ```
 
-# Compositional analysis with CLR
+# Compositional analysis with CLR transformation
+
+Details: [9. Compositional Analysis with CLR Transformation][wiki-clr]. Transform counts with CLR before fitting the adjusted age model on a compositional scale.
+
 ```{r}
-ps_clr <- transform_sample_counts(ps_IBD, function(x) {
+ps_clr <- transform_sample_counts(ps, function(x) {
   x <- x + 1e-9
   log(x) - mean(log(x))
 })
 otu_clr <- as(otu_table(ps_clr), "matrix") %>% t() %>% as.data.frame()
 meta_clr <- as(sample_data(ps_clr), "matrix") %>% as.data.frame()
 tax_clr <- as(tax_table(ps_clr), "matrix") %>% as.data.frame()
-
-unique(meta_clr['Disease.MESH.ID'])
 ```
+The hidden chunk below reshapes CLR values into the long table `dat_clr`.
 
-## Make long table
-```{r}
+```{r, include=FALSE}
 dat_clr <- otu_clr %>%
   rownames_to_column("sample_id") %>%
   pivot_longer(-sample_id, names_to = "taxon", values_to = "clr") %>%
   left_join(meta_clr %>% as("data.frame") %>% rownames_to_column("sample_id"), by = "sample_id") %>%
   left_join(tax_clr %>% rownames_to_column("taxon"), by = "taxon")
 ```
+Fit one adjusted linear model per taxon using CLR values as the response.
 
-## Test according to healthy vs sick, country
 ```{r}
-clr_country <- subset_samples(ps_clr, Country %in% c("Denmark", "Spain", "United States of America"))
-otu_clr_country <- as(otu_table(clr_country), "matrix") %>% t() %>% as.data.frame()
-meta_clr_country <- as(sample_data(clr_country), "matrix") %>% as.data.frame()
-tax_clr_country <- as(tax_table(clr_country), "matrix") %>% as.data.frame()
-
-dat_clr_country <- otu_clr_country %>%
-  rownames_to_column("sample_id") %>%
-  pivot_longer(-sample_id, names_to = "taxon", values_to = "clr") %>%
-  left_join(meta_clr %>% as("data.frame") %>% rownames_to_column("sample_id"), by = "sample_id") %>%
-  left_join(tax_clr %>% rownames_to_column("taxon"), by = "taxon")
-
-clr_status_v_country <- dat_clr_country %>%
+clr_age_adjusted_status_results <- dat_clr %>%
+  filter(body_site == "gut") %>%
   mutate(
-    Country = factor(Country, levels = c("Denmark", "Spain", "United States of America")),
-    Status = factor(Disease.MESH.ID, levels = c("D006262", "D003093"))
+    age = factor(age, levels = c("infant", "adult")),
+    status = factor(status, levels = c("healthy", "sick"))
   ) %>%
-  group_by(taxon, Genus, Species) %>%
+  group_by(taxon, genus, species) %>%
   group_modify(~ {
     fit <- lm(
-      clr ~ Country + Status,
+      clr ~ age + status,
       data = .x
     )
 
     broom::tidy(fit)
   }) %>%
   ungroup() %>%
+  filter(term == "ageadult") %>%
   mutate(q_value = p.adjust(p.value, method = "BH"))
-
 ```
+Positive CLR estimates indicate adult enrichment relative to the community geometric mean; negative estimates indicate infant enrichment. The next table lists infant-enriched taxa.
 
 ```{r}
-clr_status_v_country_enriched <- clr_status_v_country %>%
-  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+clr_infant_enriched <- clr_age_adjusted_status_results %>%
+  select(taxon, genus, species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
   head(10)
 
-clr_status_v_country_enriched
+clr_infant_enriched
 ```
+Inspect the top CLR infant-enriched taxon on the CLR scale.
+
 ```{r}
-dat_clr_country %>%
-  filter(taxon == clr_status_v_country_enriched %>% slice(1) %>% pull(taxon)) %>%
-  ggplot(aes(x = Country, y = clr, fill = Country)) +
+dat_clr %>%
+  filter(taxon == clr_infant_enriched %>% slice(1) %>% pull(taxon)) %>%
+  filter(body_site == "gut") %>%
+  ggplot(aes(x = age, y = clr, fill = age)) +
     geom_boxplot(outlier.shape = NA) +
-    #geom_jitter(width = 0.15) +
+    geom_jitter(width = 0.15) +
     theme_bw()
 ```
+The y-axis is CLR, not relative abundance; compare direction rather than raw magnitude with earlier plots.
+
+The next table lists CLR adult-enriched taxa.
+
+```{r}
+clr_adult_enriched <- clr_age_adjusted_status_results %>%
+  select(taxon, genus, species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(-estimate) %>%
+  head(10)
+
+clr_adult_enriched
+```
+Inspect the top CLR adult-enriched taxon on the CLR scale.
+
+```{r}
+dat_clr %>%
+  filter(taxon == clr_adult_enriched %>% slice(1) %>% pull(taxon)) %>%
+  filter(body_site == "gut") %>%
+  ggplot(aes(x = age, y = clr, fill = age)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(width = 0.15) +
+    theme_bw()
+```
+Check whether the group separation matches the CLR estimate and q-value.
+
+The CLR volcano plot summarises the compositional model results.
+
+```{r}
+# Volcano plot: CLR-based linear model
+clr_age_adjusted_status_results %>%
+  mutate(
+    neg_log10_q = -log10(q_value),
+    direction = case_when(
+      q_value < 0.05 & estimate > 0 ~ "Adult-enriched",
+      q_value < 0.05 & estimate < 0 ~ "Infant-enriched",
+      TRUE ~ "Not significant"
+    )
+  ) %>%
+  ggplot(aes(x = estimate, y = neg_log10_q, color = direction)) +
+    geom_point(alpha = 0.6, size = 2) +
+    scale_color_manual(values = c("Adult-enriched" = "#E74C3C", "Infant-enriched" = "#3498DB", "Not significant" = "grey60")) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey40") +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+    labs(x = "CLR estimate (adult vs infant)", y = "-log10(q-value)", color = NULL,
+         title = "Compositional analysis (CLR): age effect in gut microbiome") +
+    theme_bw()
+```
+Use this volcano plot as the compositionally aware reference analysis.
+
+The next plot shows CLR effect size on the x-axis and orders taxa by q-value.
+
+```{r}
+# Bar chart of top significant taxa ordered by q-value (CLR)
+bind_rows(
+  clr_age_adjusted_status_results %>% filter(q_value < 0.05) %>% arrange(estimate) %>% head(10),
+  clr_age_adjusted_status_results %>% filter(q_value < 0.05) %>% arrange(-estimate) %>% head(10)
+) %>%
+  distinct() %>%
+  mutate(
+    label = species,
+    direction = ifelse(estimate > 0, "Adult-enriched", "Infant-enriched")
+  ) %>%
+  ggplot(aes(x = reorder(label, -q_value), y = estimate, fill = direction)) +
+    geom_col() +
+    coord_flip() +
+    scale_fill_manual(values = c("Adult-enriched" = "#E74C3C", "Infant-enriched" = "#3498DB")) +
+    labs(x = NULL, y = "CLR estimate (adult vs infant)", fill = NULL,
+         title = "Top differentially abundant taxa (CLR)") +
+    theme_bw()
+```
+Taxa that change strongly under CLR are important interpretation cases.
+
+
