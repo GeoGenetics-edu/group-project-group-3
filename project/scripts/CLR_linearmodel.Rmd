@@ -19,20 +19,27 @@ library(broom.mixed)
 ```
 
 ```{r}
-IBD_path <- "../data/D003093_Colitis,_Ulcerative/species/phyloseq.RData"
+path <- "../data/D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
 
-ps_IBD <- get(load(IBD_path))
+ps <- get(load(path))
 
-ps_IBD_rel <- transform_sample_counts(ps_IBD, function(x) x / sum(x))
-otu_IBD_rel <- as(otu_table(ps_IBD_rel), "matrix") %>% t() %>% as.data.frame()
-meta_IBD_rel <- as(sample_data(ps_IBD_rel), "matrix") %>% as.data.frame()
-tax_IBD_rel <- as(tax_table(ps_IBD_rel), "matrix") %>% as.data.frame()  
+meta <- as(sample_data(ps), "matrix") %>% as.data.frame()
+otu <- as(otu_table(ps), "matrix") %>% as.data.frame()
+tax <- as(tax_table(ps), "matrix") %>% as.data.frame()
+
+as.list(unique(meta['Country']))
+
+ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
+otu_rel <- as(otu_table(ps_rel), "matrix") %>% t() %>% as.data.frame()
+meta_rel <- as(sample_data(ps_rel), "matrix") %>% as.data.frame()
+tax_rel <- as(tax_table(ps_rel), "matrix") %>% as.data.frame()  
 ```
 
 # Compositional analysis with CLR transformation
 
 Details: [9. Compositional Analysis with CLR Transformation][wiki-clr]. Transform counts with CLR before fitting the adjusted age model on a compositional scale.
 
+## CLR
 ```{r}
 ps_clr <- transform_sample_counts(ps, function(x) {
   x <- x + 1e-9
@@ -41,6 +48,7 @@ ps_clr <- transform_sample_counts(ps, function(x) {
 otu_clr <- as(otu_table(ps_clr), "matrix") %>% t() %>% as.data.frame()
 meta_clr <- as(sample_data(ps_clr), "matrix") %>% as.data.frame()
 tax_clr <- as(tax_table(ps_clr), "matrix") %>% as.data.frame()
+
 ```
 The hidden chunk below reshapes CLR values into the long table `dat_clr`.
 
@@ -53,45 +61,48 @@ dat_clr <- otu_clr %>%
 ```
 Fit one adjusted linear model per taxon using CLR values as the response.
 
+## CLR
 ```{r}
 clr_age_adjusted_status_results <- dat_clr %>%
-  filter(body_site == "gut") %>%
   mutate(
-    age = factor(age, levels = c("infant", "adult")),
-    status = factor(status, levels = c("healthy", "sick"))
+    sex = factor(Sex, levels = c("Female", "Male")),
+    status = factor(Disease.MESH.ID, levels = c("D006262", "D003924")),
+    country = factor(Country),
+    age = as.numeric(Host.age),
+    bmi = as.numeric(BMI)
   ) %>%
-  group_by(taxon, genus, species) %>%
+  #filter(!is.na(age), !is.na(bmi)) %>%
+  group_by(taxon, Genus, Species) %>%
   group_modify(~ {
     fit <- lm(
-      clr ~ age + status,
+      clr ~ sex + status + age,
       data = .x
     )
 
     broom::tidy(fit)
   }) %>%
+  filter(term == 'statusD003924') %>%
   ungroup() %>%
-  filter(term == "ageadult") %>%
   mutate(q_value = p.adjust(p.value, method = "BH"))
 ```
 Positive CLR estimates indicate adult enrichment relative to the community geometric mean; negative estimates indicate infant enrichment. The next table lists infant-enriched taxa.
 
 ```{r}
 clr_infant_enriched <- clr_age_adjusted_status_results %>%
-  select(taxon, genus, species, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
   head(10)
 
 clr_infant_enriched
 ```
-Inspect the top CLR infant-enriched taxon on the CLR scale.
+
 
 ```{r}
 dat_clr %>%
   filter(taxon == clr_infant_enriched %>% slice(1) %>% pull(taxon)) %>%
-  filter(body_site == "gut") %>%
-  ggplot(aes(x = age, y = clr, fill = age)) +
+  ggplot(aes(x = Disease.MESH.ID, y = clr, fill = Disease.MESH.ID)) +
     geom_boxplot(outlier.shape = NA) +
-    geom_jitter(width = 0.15) +
+    #geom_jitter(width = 0.15) +
     theme_bw()
 ```
 The y-axis is CLR, not relative abundance; compare direction rather than raw magnitude with earlier plots.
@@ -100,7 +111,7 @@ The next table lists CLR adult-enriched taxa.
 
 ```{r}
 clr_adult_enriched <- clr_age_adjusted_status_results %>%
-  select(taxon, genus, species, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(-estimate) %>%
   head(10)
 
@@ -111,8 +122,7 @@ Inspect the top CLR adult-enriched taxon on the CLR scale.
 ```{r}
 dat_clr %>%
   filter(taxon == clr_adult_enriched %>% slice(1) %>% pull(taxon)) %>%
-  filter(body_site == "gut") %>%
-  ggplot(aes(x = age, y = clr, fill = age)) +
+  ggplot(aes(x = Disease.MESH.ID, y = clr, fill = Disease.MESH.ID)) +
     geom_boxplot(outlier.shape = NA) +
     geom_jitter(width = 0.15) +
     theme_bw()
@@ -127,14 +137,14 @@ clr_age_adjusted_status_results %>%
   mutate(
     neg_log10_q = -log10(q_value),
     direction = case_when(
-      q_value < 0.05 & estimate > 0 ~ "Adult-enriched",
-      q_value < 0.05 & estimate < 0 ~ "Infant-enriched",
+      q_value < 0.05 & estimate > 0 ~ "Female-enriched",
+      q_value < 0.05 & estimate < 0 ~ "Male-enriched",
       TRUE ~ "Not significant"
     )
   ) %>%
   ggplot(aes(x = estimate, y = neg_log10_q, color = direction)) +
     geom_point(alpha = 0.6, size = 2) +
-    scale_color_manual(values = c("Adult-enriched" = "#E74C3C", "Infant-enriched" = "#3498DB", "Not significant" = "grey60")) +
+    scale_color_manual(values = c("Female-enriched" = "#E74C3C", "Male-enriched" = "#3498DB", "Not significant" = "grey60")) +
     geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey40") +
     geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
     labs(x = "CLR estimate (adult vs infant)", y = "-log10(q-value)", color = NULL,
@@ -153,14 +163,14 @@ bind_rows(
 ) %>%
   distinct() %>%
   mutate(
-    label = species,
-    direction = ifelse(estimate > 0, "Adult-enriched", "Infant-enriched")
+    label = Species,
+    direction = ifelse(estimate > 0, "Female-enriched", "Male-enriched")
   ) %>%
   ggplot(aes(x = reorder(label, -q_value), y = estimate, fill = direction)) +
     geom_col() +
     coord_flip() +
-    scale_fill_manual(values = c("Adult-enriched" = "#E74C3C", "Infant-enriched" = "#3498DB")) +
-    labs(x = NULL, y = "CLR estimate (adult vs infant)", fill = NULL,
+    scale_fill_manual(values = c("Female-enriched" = "#E74C3C", "Male-enriched" = "#3498DB")) +
+    labs(x = NULL, y = "CLR estimate (Female vs male)", fill = NULL,
          title = "Top differentially abundant taxa (CLR)") +
     theme_bw()
 ```
