@@ -43,6 +43,8 @@ sample_data(ps) %>%
 
 ```{r}
 table(sample_data(ps)$Country)
+table(sample_data(ps)$Disease.MESH.ID)
+sample_variables(ps)
 ```
 
 ```{r filter-samples}
@@ -59,6 +61,8 @@ samples_to_keep <- sd %>%
   # filter(Recent.antibiotics.use %in% c("N", "Y")) %>%
   pull(SampleID)
 
+
+
 cat("Samples kept:", length(samples_to_keep), "\n")
 cat("Samples removed:", nsamples(ps) - length(samples_to_keep), "\n")
 cat("Country distribution:\n")
@@ -73,6 +77,11 @@ sample_data(ps_clean)$keep <- NULL
 sample_data(ps)$keep <- NULL
 ps_clean <- prune_taxa(taxa_sums(ps_clean) > 0, ps_clean)
 
+# Add readable disease label to ps after filtering
+sample_data(ps_clean)$Disease <- ifelse(
+  sample_data(ps_clean)$Disease.MESH.ID == "D003924", "T2D", "Healthy"
+)
+
 # Note: data is relative abundance - Observed/Chao1 not valid
 ps_rel_cleaned <- transform_sample_counts(ps_clean, function(x) x / sum(x))
 ps_pa_cleaned  <- transform_sample_counts(ps_clean, function(x) ifelse(x > 0, 1, 0))
@@ -80,6 +89,21 @@ ps_pa_cleaned  <- transform_sample_counts(ps_clean, function(x) ifelse(x > 0, 1,
 ps_clr <- microbiome::transform(ps_clean, transform = "clr")
 ```
 
+```{r disease-distribution}
+sample_data(ps_clean) %>%
+  data.frame() %>%
+  count(Disease, Country) %>%
+  ggplot(aes(x = Country, y = n, fill = Disease)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = n), position = position_dodge(width = 0.9), 
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("T2D" = "#E74C3C", "Healthy" = "#3498DB")) +
+  labs(
+    title = "Distribution of T2D and Healthy samples",
+    x = "Country", y = "Number of samples", fill = "Disease"
+  ) +
+  theme_bw()
+```
 
 ```{r distances, include=FALSE}
 bray_dist    <- distance(ps_rel_cleaned, method = "bray")
@@ -122,25 +146,25 @@ plot_ordination(
 ```
 
 ```{r rda-plot, fig.width=9, fig.height=6}
-# 1. Prepare OTU matrix (samples as rows)
-# Extract CLR-transformed OTU matrix
+# 1. CLR-transformed OTU matrix
 otu_clr <- as.data.frame(otu_table(ps_clr))
 if (taxa_are_rows(ps_clr)) otu_clr <- t(otu_clr)
 otu_clr <- as.data.frame(otu_clr)
 
-# 2. Prepare metadata — scale continuous variables
+# 2. Metadata
 meta_rda <- sample_data(ps_clean) %>%
   data.frame() %>%
-  select(Sex, Country, Host.age, Nr..reads.sequenced) %>%
+  select(Sex, Country, Host.age, Nr..reads.sequenced, Disease) %>%
   mutate(
-    Host.age             = scale(Host.age),
-    Nr..reads.sequenced  = scale(Nr..reads.sequenced),
-    Sex                  = as.factor(Sex),
-    Country              = as.factor(Country)
+    Host.age            = scale(Host.age),
+    Nr..reads.sequenced = scale(Nr..reads.sequenced),
+    Sex                 = as.factor(Sex),
+    Country             = as.factor(Country),
+    Disease             = as.factor(Disease)
   )
 
-# 3. Run RDA
-rda_result <- rda(otu_clr ~ Sex + Host.age + Nr..reads.sequenced,
+# 3. RDA
+rda_result <- rda(otu_clr ~ Sex + Country + Host.age + Nr..reads.sequenced + Disease,
                   data = meta_rda)
 
 # 4. Variance explained
@@ -157,12 +181,12 @@ site_scores <- scores(rda_result, display = "sites") %>%
     by = "SampleID"
   )
 
-# 6. Biplot (constraint) arrows
+# 6. Biplot arrows
 biplot_scores <- scores(rda_result, display = "bp") %>%
   as.data.frame() %>%
   rownames_to_column("variable")
 
-# 7. Scale arrows to 80% of site score range
+# 7. Scale arrows
 site_range  <- max(abs(c(site_scores$RDA1, site_scores$RDA2)))
 arrow_scale <- site_range * 0.8 /
   max(sqrt(biplot_scores$RDA1^2 + biplot_scores$RDA2^2))
@@ -172,7 +196,7 @@ biplot_scores <- biplot_scores %>%
 # 8. Plot
 ggplot() +
   geom_point(data = site_scores,
-             aes(x = RDA1, y = RDA2, color = Country, shape = Sex),
+             aes(x = RDA1, y = RDA2, color = Disease, shape = Country),
              size = 3, alpha = 0.8) +
   geom_segment(data = biplot_scores,
                aes(x = 0, y = 0, xend = RDA1, yend = RDA2),
@@ -181,12 +205,13 @@ ggplot() +
   geom_text(data = biplot_scores,
             aes(x = RDA1 * 1.15, y = RDA2 * 1.15, label = variable),
             size = 3.5, fontface = "bold", color = "black") +
-  scale_color_brewer(palette = "Set1") +
+  scale_color_manual(values = c("T2D" = "#E74C3C", "Healthy" = "#3498DB")) +
+  scale_shape_manual(values = c("China" = 16, "Sweden" = 17)) +
   labs(
-    title = "RDA: gut microbiome constrained by Sex, Country, Age & Read depth",
+    title = "RDA: gut microbiome constrained by Disease, Sex, Country, Age & Read depth",
     x = paste0("RDA1 (", pct1, "% of total variance)"),
     y = paste0("RDA2 (", pct2, "% of total variance)"),
-    color = "Country", shape = "Sex"
+    color = "Disease", shape = "Country"
   ) +
   theme_bw()
 ```
