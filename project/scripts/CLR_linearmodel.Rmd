@@ -36,8 +36,11 @@ tree <- phy_tree(phyloseqobj)
 ```{r}
 table(meta$Sex, useNA = "always")
 table(meta$Country, useNA = "always")
+sum(is.na(meta$Country))
 table(meta$Disease.MESH.ID, useNA = "always")
+sum(is.na(meta$Disease.MESH.ID))
 table(meta$Recent.antibiotics.use, useNA = "always")
+sum(is.na(meta$Recent.antibiotics.use))
 
 max(sample_sums(phyloseqobj))
 
@@ -625,10 +628,10 @@ pca_scores <- as.data.frame(clr_pca$x[, 1:2]) %>%
 pca_var <- round(100 * clr_pca$sdev^2 / sum(clr_pca$sdev^2), 1)
 
 pca_scores %>%
-  ggplot(aes(x = PC1, y = PC2, color = factor(Sex), shape = factor(Disease.MESH.ID))) +
+  ggplot(aes(x = PC1, y = PC2, color = factor(Disease.MESH.ID), shape = factor(Sex))) +
     geom_point(size = 3, alpha = 0.85) +
-    scale_color_manual(values = c("Female" = "#E74C3C", "Male" = "#3498DB")) +
-    scale_shape_manual(values = c("D003924" = 16, "D006262" = 17)) +
+    scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB")) +
+    scale_shape_manual(values = c("Female" = 16, "Male" = 17)) +
     labs(x = paste0("PC1 (", pca_var[1], "%)"),
          y = paste0("PC2 (", pca_var[2], "%)"),
          color = "Age", shape = "Status",
