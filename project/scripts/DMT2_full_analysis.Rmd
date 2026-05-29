@@ -1,0 +1,79 @@
+---
+title: "DMT2_full_analysis"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(phyloseq)
+library(vegan)
+library(dplyr)
+library(tibble)
+library(purrr)
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(ggh4x)
+library(lme4)
+library(lmerTest)
+library(broom.mixed)
+library(microbiome)
+```
+
+
+
+```{r}
+
+#load phyloseq object
+
+DM_path <- "../data/D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
+ps_dm <- get(load(DM_path))  # rename directly to ps
+```
+
+```{r}
+sample_variables(ps_dm)
+sample_data(ps_dm)
+```
+
+
+#Initially, when looking at the trends in sample metadata, we can notice some things that are important to have in mind: 
+#1: Disease.MESH.ID: D003924 = people with the diabetes disease, D006262 = healthy people
+#2: The number of samples from people who recently used antibiotics is way lower than people who did not recently use antibiotics (this is an imbalance in the dataset)
+#3: Only samples from USA contain BMI information
+#4: the last two columns (Disease.name and QC.status) are not contributing with valuable information to the dataset, because the value is the same for all the samples for both columns.
+
+```{r}
+
+#Working with the metadata is easier with a dataframe structure
+ps_dm_df <- sample_data(ps_dm) %>% data.frame()
+
+
+table(ps_dm_df$Sex)
+table(ps_dm_df$Country)
+table(ps_dm_df$Recent.antibiotics.use)
+table(ps_dm_df$Host.age)
+table(ps_dm_df$Disease.MESH.ID)
+table(ps_dm_df$Disease.name)
+table(ps_dm_df$BMI)
+table(ps_dm_df$Experiment.type)
+table(ps_dm_df$Project.ID)
+
+```
+#when summarizing each column, we get more information about the distribution of feature values. 
+#The values for age and BMI have decimals, which is a bit tedious to work with, so I might have to group/floor the values before doing further analysis. Columns to remove: Experiment.type, Disease.name, QC.status
+
+
+```{r}
+
+```
+
+
+
+
