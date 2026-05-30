@@ -19,10 +19,14 @@ library(lmerTest)
 library(broom.mixed)
 ```
 
+Main questions:
+- Is there any different between the gut microbiome of diabetics and non-diabetics in China?
+- Is there any geographical differences of the gut microbiomes of diabetics?
+
 # Explore and load data
 ## Load data
 ```{r}
-path <- "../data/D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
+path <- "../data/D003924_Diabetes_Mellitus,_T/genus/phyloseq.RData"
 
 ps <- get(load(path))
 
@@ -90,6 +94,8 @@ sample_data(ps)$Country <- factor(sample_data(ps)$Country)
 ps_china <- subset_samples(ps, Country %in% c('China'))
 sample_data(ps)
 
+ps_w_vs_e <- subset_samples(ps, Disease.MESH.ID %in% c('D003924'))
+
 ```
 
 ## Functions for relative abundance and counts
@@ -123,21 +129,17 @@ ps_genus <- tax_glom(ps_rel, taxrank = "Species")
 china_otu_rel <- as(otu_table(china_rel), "matrix") %>% t() %>% as.data.frame()
 china_meta_rel <- as(sample_data(china_rel), "matrix") %>% as.data.frame()
 china_tax_rel <- as(tax_table(china_rel), "matrix") %>% as.data.frame()  
-china_genus <- tax_glom(china_rel, taxrank = "Species")
+china_genus <- tax_glom(china_rel, taxrank = "Genus")
 
 china_genus_sampled <- sample_ps(china_genus, FUN = sample, size = 50)
 ps_genus_sampled <- sample_ps(ps_genus, FUN = sample, size = 50)
 
 
-plot_bar(ps_genus_sampled, fill = "Species") +
-  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
-  theme(axis.text.x = element_blank())
-
-plot_bar(ps_genus_sampled, fill = "Species") +
+plot_bar(ps_genus_sampled, fill = "Genus") +
   facet_nested(~ Country, scales = "free_x") +
   theme(axis.text.x = element_blank())
 
-plot_bar(china_genus_sampled, fill = "Species") +
+plot_bar(china_genus_sampled, fill = "Genus") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
   theme(axis.text.x = element_blank())
 ```
@@ -148,7 +150,7 @@ plot_tree(ps, method = "treeonly", ladderize = TRUE)
 ```
 ## Heatmap
 ```{r}
-plot_heatmap(ps_genus_sampled, taxa.label = "Species", sample.order = 'Disease.MESH.ID')
+plot_heatmap(ps_genus_sampled, taxa.label = "Genus", sample.order = 'Disease.MESH.ID')
 ```
 
 
@@ -173,6 +175,21 @@ plot_richness(
   color = 'Country'
 )
 ```
+```{r}
+plot_richness(
+  ps_china,
+  measures = "Shannon",
+  color = "Disease.MESH.ID"
+)
+
+
+plot_richness(
+  china_pa,
+  measures = "Observed",
+  color = 'Disease.MESH.ID'
+)
+```
+
 ## Statistical testing on alpha diversity
 ```{r}
 ps_pa <- transform_sample_counts(ps, function(x) {ifelse(x > 0, 1, 0)})
@@ -382,7 +399,7 @@ head(ord_bray_df)
 Once the coordinates and metadata are into a single table, we can create a more flexible plot:
 
 ```{r pcoa-bray-ggplot, fig.width=8, fig.height=5}
-ggplot(ord_bray_df, aes(x = Axis.1, y = Axis.2, color = Country)) +
+ggplot(ord_bray_df, aes(x = Axis.1, y = Axis.2, color = Disease.MESH.ID, shape= Country)) +
   geom_point(size = 3) +
   theme_bw()
 ```
