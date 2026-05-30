@@ -210,7 +210,13 @@ plot_top_taxa <- function(clr_res, n = 10, x_label, title,
 run_rda <- function(ps_clr, formula_str, covariates) {
   otu_clr  <- as(otu_table(ps_clr),   "matrix") %>% t()
   meta_clr <- as(sample_data(ps_clr), "matrix") %>% as.data.frame() %>%
-    mutate(across(c(Host.age, BMI, Nr..reads.sequenced), as.numeric))
+  mutate(
+        across(c(Host.age, BMI, Nr..reads.sequenced), as.numeric),
+        # Explicitly set factor levels to match run_clr_lm
+        Sex             = factor(Sex,             levels = c("Female", "Male")),
+        Disease.MESH.ID = factor(Disease.MESH.ID, levels = c("D006262", "D003924")),
+        Country         = factor(Country,         levels = c("China", "West"))
+      )
 
   na_idx       <- apply(meta_clr[, covariates, drop = FALSE], 1, anyNA)
   clr_clean    <- otu_clr[!na_idx, ]
@@ -348,7 +354,7 @@ plot_richness(ps_global, measures = "Shannon", color = "Disease.MESH.ID") +
   theme_bw()
 
 
-plot_richness(ps_pa, measures = "Observed", color = "Disease.MESH.ID") +
+plot_richness(global_t$pa, measures = "Observed", color = "Disease.MESH.ID") +
   labs(title = "Observed diversity — global") +
   theme_bw()
 
@@ -404,7 +410,7 @@ plot_scree(ord_global)
 
 NMDS is another commonly used ordination method in ecology and microbiome analysis. Unlike PCoA, it focuses on preserving the rank order of distances rather than the distances themselves.
 
-```{r nmds-bray-basic, fig.width=8, fig.height=5}
+```{r nmds-bray-global, fig.width=8, fig.height=5}
 global_nmds <- ordinate(
   global_t$rel,
   method = "NMDS",
@@ -509,9 +515,10 @@ plot_rda_biplot(
 ### RDA vs CLR comparison
 ```{r a1-rda-clr-compare, fig.width=8, fig.height=5}
 # Sign of RDA1 is arbitrary; orient so that the diabetic group has positive RDA1
+rda1_scores_global <- scores(rda_global_out$rda, display = "sites")[, "RDA1"]
 rda1_sign_global <- ifelse(
-  mean(scores(rda_global_out$rda, display = "sites")[
-    rda_global_out$meta$Disease.MESH.ID == "D003924", "RDA1"], na.rm = TRUE) >= 0,
+  mean(rda1_scores_global[rda_global_out$meta$Disease.MESH.ID == "D003924"], na.rm = TRUE) >=
+  mean(rda1_scores_global[rda_global_out$meta$Disease.MESH.ID == "D006262"], na.rm = TRUE),
   1, -1
 )
 
@@ -614,7 +621,7 @@ plot_ordination(china_t$rel, ord_china, type = "samples",
 
 NMDS is another commonly used ordination method in ecology and microbiome analysis. Unlike PCoA, it focuses on preserving the rank order of distances rather than the distances themselves.
 
-```{r nmds-bray-basic, fig.width=8, fig.height=5}
+```{r nmds-bray-china, fig.width=8, fig.height=5}
 global_nmds <- ordinate(
   china_t$rel,
   method = "NMDS",
@@ -714,11 +721,12 @@ plot_rda_biplot(
 ```
 
 ### RDA vs CLR
-```{r a1-rda-clr-compare, fig.width=8, fig.height=5}
+```{r a2-rda-clr-compare, fig.width=8, fig.height=5}
 # Sign of RDA1 is arbitrary; orient so that the diabetic group has positive RDA1
+rda1_scores_china <- scores(rda_china_out$rda, display = "sites")[, "RDA1"]
 rda1_sign_china <- ifelse(
-  mean(scores(rda_china_out$rda, display = "sites")[
-    rda_china_out$meta$Disease.MESH.ID == "D003924", "RDA1"], na.rm = TRUE) >= 0,
+  mean(rda1_scores_china[rda_china_out$meta$Disease.MESH.ID == "D003924"], na.rm = TRUE) >=
+  mean(rda1_scores_china[rda_china_out$meta$Disease.MESH.ID == "D006262"], na.rm = TRUE),
   1, -1
 )
 
@@ -737,7 +745,7 @@ plot_rda_clr_comparison(
 )
 ```
 
-```{r a1-rda-clr-table}
+```{r a2-rda-clr-table}
 comp_china %>%
   arrange(desc(abs(rda1_loading))) %>%
   select(Genus.x, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
@@ -818,7 +826,7 @@ plot_ordination(we_t$rel, ord_we, type = "samples", color = "Country") +
 
 NMDS is another commonly used ordination method in ecology and microbiome analysis. Unlike PCoA, it focuses on preserving the rank order of distances rather than the distances themselves.
 
-```{r nmds-bray-basic, fig.width=8, fig.height=5}
+```{r nmds-bray-we, fig.width=8, fig.height=5}
 we_nmds <- ordinate(
   we_t$rel,
   method = "NMDS",
@@ -914,8 +922,8 @@ is `Country` (West relative to China), with sex, age, and BMI as covariates.
 ```{r a3-rda}
 rda_we_out <- run_rda(
   ps_clr      = we_t$clr,
-  formula_str = "Country + Sex + as.numeric(Host.age) + as.numeric(BMI) + as.numeric(Nr..reads.sequenced)",
-  covariates  = c("Country", "Sex", "Host.age", "BMI", "Nr..reads.sequenced")
+  formula_str = "Country + Sex + as.numeric(Host.age) + as.numeric(Nr..reads.sequenced)",
+  covariates  = c("Country", "Sex", "Host.age", "Nr..reads.sequenced")
 )
 
 anova(rda_we_out$rda, permutations = 999)
@@ -933,18 +941,20 @@ plot_rda_biplot(
   title        = "RDA biplot — diabetics: East vs. West"
 )
 ```
-```{r a1-rda-clr-compare, fig.width=8, fig.height=5}
-# Sign of RDA1 is arbitrary; orient so that the diabetic group has positive RDA1
+
+### Compare RDA and CLR
+```{r a3-rda-clr-compare, fig.width=8, fig.height=5}
+rda1_scores_we <- scores(rda_we_out$rda, display = "sites")[, "RDA1"]
 rda1_sign_we <- ifelse(
-  mean(scores(rda_we_out$rda, display = "sites")[
-    rda_we_out$meta$Disease.MESH.ID == "D003924", "RDA1"], na.rm = TRUE) >= 0,
+  mean(rda1_scores_we[rda_we_out$meta$Country == "West"],  na.rm = TRUE) >=
+  mean(rda1_scores_we[rda_we_out$meta$Country == "China"], na.rm = TRUE),
   1, -1
 )
 
 comp_we <- compare_rda_clr(
   rda_obj  = rda_we_out$rda,
   clr_res  = clr_we,
-  tax_df   = as(tax_table(global_t$clr), "matrix") %>% as.data.frame(),
+  tax_df   = as(tax_table(we_t$clr), "matrix") %>% as.data.frame(),
   rda1_sign = rda1_sign_we
 )
 
@@ -956,7 +966,7 @@ plot_rda_clr_comparison(
 )
 ```
 
-```{r a1-rda-clr-table}
+```{r a3-rda-clr-table}
 comp_we %>%
   arrange(desc(abs(rda1_loading))) %>%
   select(Genus.x, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
