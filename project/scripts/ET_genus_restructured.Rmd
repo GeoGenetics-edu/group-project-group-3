@@ -420,6 +420,7 @@ plot_ordination(
 )
 ```
 
+### PERMANOVA + Dispersion
 ```{r a1-permanova}
 sample_df_global <- sample_data(global_t$rel) %>% data.frame()
 
@@ -460,7 +461,7 @@ global_healthy_enriched
 global_sick_enriched
 ```
 
-
+### Plots
 ```{r}
 plot_volcano(clr_global,
              x_label   = "CLR estimate (diabetic vs healthy)",
@@ -556,19 +557,6 @@ plot_bar(china_genus_sampled, fill = "Genus") +
   theme(axis.text.x = element_blank())
 ```
 
-### PCoA — Bray-Curtis
-```{r a2-pcoa, fig.width=8, fig.height=5}
-bray_china <- distance(china_t$rel, method = "bray")
-ord_china  <- ordinate(china_t$rel, method = "PCoA", distance = bray_china)
-
-plot_ordination(china_t$rel, ord_china, type = "samples",
-                color = "Disease.MESH.ID") +
-  scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
-                     labels = c("Diabetic", "Healthy")) +
-  labs(title = "PCoA (Bray-Curtis) — China",
-       color = "Status") +
-  theme_bw()
-```
 
 ## Alpha Diversity
 ```{r a2-alpha}
@@ -595,6 +583,54 @@ cor.test(alpha_china$reads, alpha_china$Shannon, method = "spearman")
 ```
 
 ## Beta Diversity — PERMANOVA
+### Calculating the Bray-Curtis distances and the Jaccard distances
+```{r}
+bray_dist <- distance(
+  ps_china,
+  method = "bray"
+)
+
+jaccard_dist <- distance(
+  china_t$pa,
+  method = "jaccard"
+)
+```
+
+### PCoA — Bray-Curtis
+```{r a2-pcoa, fig.width=8, fig.height=5}
+bray_china <- distance(china_t$rel, method = "bray")
+ord_china  <- ordinate(china_t$rel, method = "PCoA", distance = bray_china)
+
+plot_ordination(china_t$rel, ord_china, type = "samples",
+                color = "Disease.MESH.ID") +
+  scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
+                     labels = c("Diabetic", "Healthy")) +
+  labs(title = "PCoA (Bray-Curtis) — China",
+       color = "Status") +
+  theme_bw()
+```
+
+### NMDS based on Bray-Curtis distance
+
+NMDS is another commonly used ordination method in ecology and microbiome analysis. Unlike PCoA, it focuses on preserving the rank order of distances rather than the distances themselves.
+
+```{r nmds-bray-basic, fig.width=8, fig.height=5}
+global_nmds <- ordinate(
+  china_t$rel,
+  method = "NMDS",
+  distance = "bray"
+)
+
+plot_ordination(
+  china_t$rel,
+  global_nmds,
+  type = "samples",
+  color = "Disease.MESH.ID",
+  shape = "Sex"
+)
+```
+
+### PERMANOVA + Dispersion
 ```{r a2-permanova}
 sample_df_china <- sample_data(china_t$rel) %>% data.frame()
 
@@ -611,6 +647,7 @@ plot(disp_china, main = "Dispersion — China by disease status")
 The model adjusts for sex, age, and sequencing depth (country is fixed to China,
 so it is omitted). The term of interest is `statusD003924`.
 
+### Running CLR + GLM
 ```{r a2-clr}
 clr_china <- run_clr_lm(
   ps_clr      = china_t$clr,
@@ -618,6 +655,23 @@ clr_china <- run_clr_lm(
   term_filter = "statusD003924"
 )
 
+
+china_healthy_enriched <- clr_china %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate) %>%
+  head(10)
+
+china_sick_enriched <- clr_china %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(-estimate) %>%
+  head(10)
+
+china_healthy_enriched
+china_sick_enriched
+```
+
+### Plots
+```{r plots}
 plot_volcano(clr_china,
              x_label   = "CLR estimate (diabetic vs healthy, China)",
              title     = "CLR volcano — China: diabetic vs healthy",
@@ -659,7 +713,36 @@ plot_rda_biplot(
 )
 ```
 
----
+### RDA vs CLR
+```{r a1-rda-clr-compare, fig.width=8, fig.height=5}
+# Sign of RDA1 is arbitrary; orient so that the diabetic group has positive RDA1
+rda1_sign_china <- ifelse(
+  mean(scores(rda_china_out$rda, display = "sites")[
+    rda_china_out$meta$Disease.MESH.ID == "D003924", "RDA1"], na.rm = TRUE) >= 0,
+  1, -1
+)
+
+comp_china <- compare_rda_clr(
+  rda_obj  = rda_china_out$rda,
+  clr_res  = clr_china,
+  tax_df   = as(tax_table(global_t$clr), "matrix") %>% as.data.frame(),
+  rda1_sign = rda1_sign_china
+)
+
+plot_rda_clr_comparison(
+  comp_china,
+  x_label = "CLR estimate (diabetic vs healthy)",
+  y_label = "RDA1 loading (positive = diabetic side)",
+  title   = "RDA loadings vs CLR estimates — global"
+)
+```
+
+```{r a1-rda-clr-table}
+comp_china %>%
+  arrange(desc(abs(rda1_loading))) %>%
+  select(Genus.x, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  head(5)
+```
 
 # Analysis 3: East vs. West — Geographical Differences in Diabetics
 
@@ -679,16 +762,6 @@ plot_bar(we_genus_sampled, fill = "Genus") +
   theme(axis.text.x = element_blank())
 ```
 
-### PCoA — Bray-Curtis
-```{r a3-pcoa, fig.width=8, fig.height=5}
-bray_we <- distance(we_t$rel, method = "bray")
-ord_we  <- ordinate(we_t$rel, method = "PCoA", distance = bray_we)
-
-plot_ordination(we_t$rel, ord_we, type = "samples", color = "Country") +
-  scale_color_manual(values = c("China" = "#E74C3C", "West" = "#3498DB")) +
-  labs(title = "PCoA (Bray-Curtis) — diabetics: East vs. West") +
-  theme_bw()
-```
 
 ## Alpha Diversity
 ```{r a3-alpha}
@@ -717,6 +790,51 @@ cor.test(alpha_we$reads, alpha_we$Shannon, method = "spearman")
 ```
 
 ## Beta Diversity — PERMANOVA
+### Calculating the Bray-Curtis distances and the Jaccard distances
+```{r}
+bray_dist <- distance(
+  ps_we,
+  method = "bray"
+)
+
+jaccard_dist <- distance(
+  we_t$pa,
+  method = "jaccard"
+)
+```
+
+### PCoA — Bray-Curtis
+```{r a3-pcoa, fig.width=8, fig.height=5}
+bray_we <- distance(we_t$rel, method = "bray")
+ord_we  <- ordinate(we_t$rel, method = "PCoA", distance = bray_we)
+
+plot_ordination(we_t$rel, ord_we, type = "samples", color = "Country") +
+  scale_color_manual(values = c("China" = "#E74C3C", "West" = "#3498DB")) +
+  labs(title = "PCoA (Bray-Curtis) — diabetics: East vs. West") +
+  theme_bw()
+```
+
+### NMDS based on Bray-Curtis distance
+
+NMDS is another commonly used ordination method in ecology and microbiome analysis. Unlike PCoA, it focuses on preserving the rank order of distances rather than the distances themselves.
+
+```{r nmds-bray-basic, fig.width=8, fig.height=5}
+we_nmds <- ordinate(
+  we_t$rel,
+  method = "NMDS",
+  distance = "bray"
+)
+
+plot_ordination(
+  we_t$rel,
+  we_nmds,
+  type = "samples",
+  color = "Country",
+  shape = "Sex"
+)
+```
+
+### PERMANOVA + Dispersion
 ```{r a3-permanova}
 sample_df_we <- sample_data(we_t$rel) %>% data.frame()
 
@@ -740,6 +858,21 @@ clr_we <- run_clr_lm(
   term_filter = "countryWest"
 )
 
+we_healthy_enriched <- clr_we %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate) %>%
+  head(10)
+
+we_sick_enriched <- clr_we %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(-estimate) %>%
+  head(10)
+
+we_healthy_enriched
+we_sick_enriched
+```
+
+```{r}
 plot_volcano(clr_we,
              x_label   = "CLR estimate (West vs China, diabetics)",
              title     = "CLR volcano — diabetics: West vs. China",
@@ -799,4 +932,33 @@ plot_rda_biplot(
   shape_values = c("Female" = 16, "Male" = 17),
   title        = "RDA biplot — diabetics: East vs. West"
 )
+```
+```{r a1-rda-clr-compare, fig.width=8, fig.height=5}
+# Sign of RDA1 is arbitrary; orient so that the diabetic group has positive RDA1
+rda1_sign_we <- ifelse(
+  mean(scores(rda_we_out$rda, display = "sites")[
+    rda_we_out$meta$Disease.MESH.ID == "D003924", "RDA1"], na.rm = TRUE) >= 0,
+  1, -1
+)
+
+comp_we <- compare_rda_clr(
+  rda_obj  = rda_we_out$rda,
+  clr_res  = clr_we,
+  tax_df   = as(tax_table(global_t$clr), "matrix") %>% as.data.frame(),
+  rda1_sign = rda1_sign_we
+)
+
+plot_rda_clr_comparison(
+  comp_we,
+  x_label = "CLR estimate (diabetic vs healthy)",
+  y_label = "RDA1 loading (positive = diabetic side)",
+  title   = "RDA loadings vs CLR estimates — global"
+)
+```
+
+```{r a1-rda-clr-table}
+comp_we %>%
+  arrange(desc(abs(rda1_loading))) %>%
+  select(Genus.x, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  head(5)
 ```
