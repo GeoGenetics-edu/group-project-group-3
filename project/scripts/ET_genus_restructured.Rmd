@@ -66,11 +66,11 @@ phyloseq objects are created.
 
 ```{r prepare-subsets}
 # ── Recode western countries ──────────────────────────────────────────────────
-western <- c("Denmark", "Estonia", "Finland", "Germany",
-             "Hungary", "Sweden", "United States of America", "Yugoslavia")
+europe <- c("Denmark", "Estonia", "Finland", "Germany",
+             "Hungary", "Sweden", "Yugoslavia")
 
 sample_data(ps)$Country <- as.character(sample_data(ps)$Country)
-sample_data(ps)$Country[sample_data(ps)$Country %in% western] <- "West"
+sample_data(ps)$Country[sample_data(ps)$Country %in% europe] <- "Europe"
 sample_data(ps)$Country <- factor(sample_data(ps)$Country)
 
 # ── Analysis subsets ──────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ ps_global <- ps
 ps_china  <- subset_samples(ps, Country == "China")
 
 # Analysis 3: diabetics only (West vs China)
-ps_we     <- subset_samples(ps, Disease.MESH.ID == "D003924")
+ps_we     <- subset_samples(ps, Disease.MESH.ID == "D003924" & Sex == "Female" &  Country %in% c("Europe", "China"))
 ```
 
 ## Transformed Phyloseq Objects
@@ -153,7 +153,7 @@ run_clr_lm <- function(ps_clr, formula_str, term_filter) {
     mutate(
       sex    = factor(Sex,            levels = c("Female", "Male")),
       status = factor(Disease.MESH.ID, levels = c("D006262", "D003924")),
-      country= factor(Country,         levels = c("China", "West")),
+      country= factor(Country,         levels = c("China", "Europe", "United States of America")),
       age    = as.numeric(Host.age),
       bmi    = as.numeric(BMI),
       depth  = as.numeric(Nr..reads.sequenced)
@@ -215,7 +215,7 @@ run_rda <- function(ps_clr, formula_str, covariates) {
         # Explicitly set factor levels to match run_clr_lm
         Sex             = factor(Sex,             levels = c("Female", "Male")),
         Disease.MESH.ID = factor(Disease.MESH.ID, levels = c("D006262", "D003924")),
-        Country         = factor(Country,         levels = c("China", "West"))
+        Country         = factor(Country,         levels = c("China", "Europe", "United States of America"))
       )
 
   na_idx       <- apply(meta_clr[, covariates, drop = FALSE], 1, anyNA)
@@ -259,8 +259,17 @@ plot_rda_biplot <- function(rda_obj, meta_df,
     aes(x = RDA1, y = RDA2, color = .data[[color_var]])
   }
 
+  
+  
   p <- ggplot() +
     geom_point(data = site_scores, mapping = aes_map, size = 3, alpha = 0.85) +
+  geom_segment(data = top_species_scores,
+               aes(x = 0, y = 0, xend = RDA1, yend = RDA2),
+               arrow = arrow(length = unit(0.15, "cm")),
+               color = "grey70", linewidth = 0.5) +
+  geom_text(data = top_species_scores,
+            aes(x = RDA1 * 1.15, y = RDA2 * 1.15, label = label),
+            size = 2.5, color = "grey50") +
     geom_segment(data = bp_scores,
                  aes(x = 0, y = 0, xend = RDA1, yend = RDA2),
                  arrow = arrow(length = unit(0.25, "cm")),
@@ -448,7 +457,7 @@ is `statusD003924` (diabetic relative to healthy).
 ```{r a1-clr}
 clr_global <- run_clr_lm(
   ps_clr       = global_t$clr,
-  formula_str  = "clr ~ sex + status + country + age + depth", 
+  formula_str  = "clr ~ sex + country + status + age + depth", 
   term_filter  = "statusD003924"
 )
 
@@ -790,7 +799,7 @@ alpha_we$reads <- sample_sums(ps_we)[alpha_we$sample_id]
 
 ggplot(alpha_we, aes(x = reads, y = Shannon, color = Country)) +
   geom_point() + geom_smooth(method = "lm") +
-  scale_color_manual(values = c("China" = "#E74C3C", "West" = "#3498DB")) +
+  scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
   labs(title = "Sequencing depth vs. Shannon — diabetics by geography") +
   theme_bw()
 
@@ -817,7 +826,7 @@ bray_we <- distance(we_t$rel, method = "bray")
 ord_we  <- ordinate(we_t$rel, method = "PCoA", distance = bray_we)
 
 plot_ordination(we_t$rel, ord_we, type = "samples", color = "Country") +
-  scale_color_manual(values = c("China" = "#E74C3C", "West" = "#3498DB")) +
+  scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
   labs(title = "PCoA (Bray-Curtis) — diabetics: East vs. West") +
   theme_bw()
 ```
@@ -862,8 +871,8 @@ is `countryWest` (West relative to China).
 ```{r a3-clr}
 clr_we <- run_clr_lm(
   ps_clr      = we_t$clr,
-  formula_str = "clr ~ sex + country + age + depth",
-  term_filter = "countryWest"
+  formula_str = "clr ~ country + age + depth",
+  term_filter = "countryEurope"
 )
 
 we_healthy_enriched <- clr_we %>%
@@ -907,7 +916,7 @@ as.data.frame(pca_we$x[, 1:2]) %>%
   left_join(meta_clr_we %>% rownames_to_column("sample_id"), by = "sample_id") %>%
   ggplot(aes(x = PC1, y = PC2, color = Country)) +
     geom_point(size = 3, alpha = 0.85) +
-    scale_color_manual(values = c("China" = "#E74C3C", "West" = "#3498DB")) +
+    scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
     labs(x = paste0("PC1 (", pca_var[1], "%)"),
          y = paste0("PC2 (", pca_var[2], "%)"),
          title = "PCA of CLR profiles — diabetics: East vs. West") +
@@ -922,8 +931,8 @@ is `Country` (West relative to China), with sex, age, and BMI as covariates.
 ```{r a3-rda}
 rda_we_out <- run_rda(
   ps_clr      = we_t$clr,
-  formula_str = "Country + Sex + as.numeric(Host.age) + as.numeric(Nr..reads.sequenced)",
-  covariates  = c("Country", "Sex", "Host.age", "Nr..reads.sequenced")
+  formula_str = "Country + as.numeric(Host.age) + as.numeric(Nr..reads.sequenced)",
+  covariates  = c("Country", "Host.age", "Nr..reads.sequenced")
 )
 
 anova(rda_we_out$rda, permutations = 999)
@@ -936,7 +945,7 @@ plot_rda_biplot(
   meta_df      = rda_we_out$meta,
   color_var    = "Country",
   shape_var    = "Sex",
-  color_values = c("China" = "#E74C3C", "West" = "#3498DB"),
+  color_values = c("China" = "#E74C3C", "Europe" = "#3498DB"),
   shape_values = c("Female" = 16, "Male" = 17),
   title        = "RDA biplot — diabetics: East vs. West"
 )
@@ -946,7 +955,7 @@ plot_rda_biplot(
 ```{r a3-rda-clr-compare, fig.width=8, fig.height=5}
 rda1_scores_we <- scores(rda_we_out$rda, display = "sites")[, "RDA1"]
 rda1_sign_we <- ifelse(
-  mean(rda1_scores_we[rda_we_out$meta$Country == "West"],  na.rm = TRUE) >=
+  mean(rda1_scores_we[rda_we_out$meta$Country == "Europe"],  na.rm = TRUE) >=
   mean(rda1_scores_we[rda_we_out$meta$Country == "China"], na.rm = TRUE),
   1, -1
 )
@@ -968,7 +977,7 @@ plot_rda_clr_comparison(
 
 ```{r a3-rda-clr-table}
 comp_we %>%
-  arrange(desc(abs(rda1_loading))) %>%
+  arrange((abs(clr_q))) %>%
   select(Genus.x, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
-  head(5)
+  head(30)
 ```
