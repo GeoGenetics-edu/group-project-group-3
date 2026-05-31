@@ -115,6 +115,21 @@ sample_data(ps_clean) %>%
   theme_bw()
 ```
 
+```{r sex-distribution, fig.width=7, fig.height=5}
+sample_data(ps) %>%
+  data.frame() %>%
+  count(Country, Sex) %>%
+  ggplot(aes(x = Country, y = n, fill = Sex)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = n), position = position_dodge(width = 0.9),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("Male" = "#3498DB", "Female" = "#E74C3C")) +
+  labs(title = "Sex distribution per country",
+       x = "Country", y = "Number of samples") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
 ```{r distances, include=FALSE}
 bray_dist    <- distance(ps_rel_cleaned, method = "bray")
 jaccard_dist <- distance(ps_pa_cleaned,  method = "jaccard")
@@ -170,17 +185,16 @@ otu_clr <- as.data.frame(otu_clr)
 # 2. Metadata from rda_data
 meta_rda <- sample_data(rda_data) %>%
   data.frame() %>%
-  select(Sex, Continent, Host.age, Nr..reads.sequenced, Disease) %>%
+  select(Continent, Host.age, Nr..reads.sequenced, Disease) %>%
   mutate(
     Host.age            = scale(Host.age),
     Nr..reads.sequenced = scale(Nr..reads.sequenced),
-    Sex                 = as.factor(Sex),
     Continent           = as.factor(Continent),
     Disease             = as.factor(Disease)
   )
 
 # 3. RDA
-rda_result <- rda(otu_clr ~ Sex + Continent + Host.age + Nr..reads.sequenced + Disease,
+rda_result <- rda(otu_clr ~ Continent + Host.age + Nr..reads.sequenced + Disease,
                   data = meta_rda)
 
 # 4. Variance explained
@@ -233,7 +247,7 @@ top_species <- top_species %>%
 # 8. Plot
 ggplot() +
   geom_point(data = site_scores,
-             aes(x = RDA1, y = RDA2, color = Continent, shape = Sex),
+             aes(x = RDA1, y = RDA2, color = Continent),
              size = 3, alpha = 0.8) +
   geom_segment(data = biplot_scores,
                aes(x = 0, y = 0, xend = RDA1, yend = RDA2),
@@ -243,12 +257,11 @@ ggplot() +
             aes(x = RDA1 * 1.15, y = RDA2 * 1.15, label = variable),
             size = 3.5, fontface = "bold", color = "black") +
   scale_color_manual(values = c("Asia" = "#E74C3C", "Europe" = "#3498DB")) +
-  scale_shape_manual(values = c("Male" = 16, "Female" = 17)) +
   labs(
-    title = "RDA: gut microbiome constrained by Disease, Sex, Continent, Age & Read depth",
+    title = "RDA: gut microbiome constrained by Disease, Continent, Age & Read depth",
     x = paste0("RDA1 (", pct1, "% of total variance)"),
     y = paste0("RDA2 (", pct2, "% of total variance)"),
-    color = "Continent", shape = "Sex"
+    color = "Continent"
   ) +
   geom_segment(data = top_species,
                aes(x = 0, y = 0, xend = RDA1, yend = RDA2),
