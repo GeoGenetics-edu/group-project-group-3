@@ -30,6 +30,7 @@ library(biomformat)
 
 # Data Loading
 ```{r load-data, include=FALSE}
+set.seed(42)
 Diabetes_path <- "../data/D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
 ps <- get(load(Diabetes_path))
 ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
