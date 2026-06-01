@@ -40,6 +40,7 @@ ps_dm <- get(load(DM_path))  # rename directly to ps
 ```{r}
 sample_variables(ps_dm)
 sample_data(ps_dm)
+rank_names(ps_dm)
 ```
 
 
@@ -67,10 +68,56 @@ table(ps_dm_df$Project.ID)
 
 ```
 #when summarizing each column, we get more information about the distribution of feature values. 
-#The values for age and BMI have decimals, which is a bit tedious to work with, so I might have to group/floor the values before doing further analysis. Columns to remove: Experiment.type, Disease.name, QC.status
+
+#The values for age and BMI have decimals, which is a bit tedious to work with, so I might have to group/floor the values before doing further analysis. Columns to remove (zero variance): Experiment.type, Disease.name, QC.status
+
+#Additionally, there are 19 missing values for Sex and 54 missing values for recent antibiotics use.
+#I didn't summarize Run.ID because it looks like a key for the different samples, so I would get 432 different values.
+#Project.ID corresponds to the region in the world the studies come from. PRJNA422434 = China, PRJNA299502 = USA, PRJEB1786 = Europe (Sweden is the majority, and 1-2 samples from some other european countries)
+
+#In conclusion: the availability of the different metadata measures is very much dependent on the individual study and thereby also the world region.
+
+#Next step: Filtering, binning, etc.
 
 
 ```{r}
+
+
+#Setting na's in the Sex column to "Unknown": code coming soon
+
+
+#Making a column with interpretable binary values instead of disease MeSH ID's
+sample_data(ps_dm_df)$Disease <- ifelse(
+  sample_data(ps_dm_df)$Disease.MESH.ID == "D003924",
+  "DMT2",
+  "No_DMT2"
+) %>% factor()
+
+
+#Categorizing the geographical regions 
+sample_data(ps_dm_df)$Study_region <- case_when(
+  sample_data(ps_dm_df)$Project.ID ==
+    "PRJEB1786" ~ "Europe",
+
+  sample_data(ps_dm_df)$Project.ID ==
+    "PRJNA299502" ~ "USA",
+
+  sample_data(ps_dm_df)$Project.ID == 
+    "PRJNA422434" ~ "China",
+
+  TRUE ~ "Other"
+)
+
+
+#splitting age into age groups
+sample_data(ps)$AgeGroup <- cut(
+  sample_data(ps)$Age,
+  breaks = c(10,30,50,70,90),
+  labels = c("Young","Middle","Older","Elderly")
+)
+
+
+
 
 ```
 
