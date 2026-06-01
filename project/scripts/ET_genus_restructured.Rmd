@@ -104,15 +104,18 @@ we_t     <- make_transforms(ps_we)
 ```{r}
 ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
 otu_rel <- as(otu_table(ps_rel), "matrix") %>% t() %>% as.data.frame()
-
-one_taxon <- dat_rel$taxon[3]
-
+meta_rel <- as(sample_data(ps_rel), "matrix") %>% as.data.frame()
+tax_rel <- as(tax_table(ps_rel), "matrix") %>% as.data.frame()  
+ps_genus <- tax_glom(ps_rel, taxrank = "Species")
 
 dat_rel <- otu_rel %>%
   rownames_to_column("sample_id") %>%
   pivot_longer(-sample_id, names_to = "taxon", values_to = "rel_abund") %>%
   left_join(meta_rel %>% as("data.frame") %>% rownames_to_column("sample_id"), by = "sample_id") %>%
   left_join(tax_rel %>% rownames_to_column("taxon"), by = "taxon")
+
+one_taxon <- dat_rel$taxon[3]
+
 
 # Comparison between body sites
 dat_rel %>%
