@@ -34,7 +34,7 @@ library(broom.mixed)
 
 ## Load Data
 ```{r load-data}
-path <- "../data/D003924_phyloseq_updated_genus.RData"
+path <- "../data/D003924_phyloseq_updated.RData"
 ps <- get(load(path))
 
 meta <- as(sample_data(ps), "matrix") %>% as.data.frame()
@@ -106,7 +106,7 @@ ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
 otu_rel <- as(otu_table(ps_rel), "matrix") %>% t() %>% as.data.frame()
 meta_rel <- as(sample_data(ps_rel), "matrix") %>% as.data.frame()
 tax_rel <- as(tax_table(ps_rel), "matrix") %>% as.data.frame()  
-ps_genus <- tax_glom(ps_rel, taxrank = "Genus")
+ps_genus <- tax_glom(ps_rel, taxrank = "Species")
 
 dat_rel <- otu_rel %>%
   rownames_to_column("sample_id") %>%
@@ -143,7 +143,7 @@ dat_rel %>%
 set.seed(42)
 example_taxa <- dat_rel %>%
   filter(Disease.MESH.ID == "D006262") %>%
-  group_by(taxon, Genus) %>%
+  group_by(taxon, Genus, Species) %>%
   summarise(prop_nonzero = mean(rel_abund > 0), .groups = "drop") %>%
   filter(prop_nonzero > 0.4, prop_nonzero < 0.9) %>%
   slice_sample(n = 6) %>%
@@ -151,7 +151,7 @@ example_taxa <- dat_rel %>%
 
 dat_rel %>%
   filter(Disease.MESH.ID == "D006262", taxon %in% example_taxa, rel_abund > 0) %>%
-  mutate(label = Genus) %>%
+  mutate(label = Species) %>%
   ggplot(aes(x = rel_abund)) +
     geom_histogram(bins = 20, fill = "steelblue", color = "white") +
     facet_wrap(~ label, scales = "free") +
@@ -163,7 +163,7 @@ dat_rel %>%
 ```{r}
 dat_rel %>%
   filter(Disease.MESH.ID == "D006262", taxon %in% example_taxa) %>%
-  mutate(label = Genus) %>%
+  mutate(label = Species) %>%
   ggplot(aes(sample = rel_abund)) +
     stat_qq(size = 0.8, alpha = 0.6) +
     stat_qq_line(color = "red", linetype = "dashed") +
@@ -233,7 +233,7 @@ run_clr_lm <- function(ps_clr, formula_str, term_filter) {
       bmi    = as.numeric(BMI),
       depth  = as.numeric(Nr..reads.sequenced)
     ) %>%
-    group_by(taxon, Phylum, Genus) %>%
+    group_by(taxon, Genus, Species) %>%
     group_modify(~ broom::tidy(lm(as.formula(formula_str), data = .x))) %>%
     filter(term == term_filter) %>%
     ungroup() %>%
@@ -273,7 +273,7 @@ plot_top_taxa <- function(clr_res, n = 10, x_label, title,
   ) %>%
     distinct() %>%
     mutate(direction = ifelse(estimate > 0, pos_label, neg_label)) %>%
-    ggplot(aes(x = reorder(Genus, -q_value), y = estimate, fill = direction)) +
+    ggplot(aes(x = reorder(Species, -q_value), y = estimate, fill = direction)) +
       geom_col() +
       coord_flip() +
       scale_fill_manual(values = c(setNames(pos_color, pos_label),
@@ -345,7 +345,7 @@ plot_rda_biplot <- function(rda_obj, meta_df,
     # Use the global 'tax' matrix directly to look up Genus names safely
     left_join(tax %>% rownames_to_column("taxon"), by = "taxon") %>% 
     head(10) %>% # Take top 10 rows for clean biplot plotting
-    mutate(label = Genus) # Use Genus instead of species since this is genus-level analysis
+    mutate(label = Species) # Use Genus instead of species since this is genus-level analysis
 
   # Scale coordinates for visualization consistency
   site_range  <- max(abs(c(site_scores$RDA1, site_scores$RDA2)))
@@ -399,7 +399,7 @@ compare_rda_clr <- function(rda_obj, clr_res, tax_df, rda1_sign = 1) {
   tibble(taxon = names(taxon_scores), rda1_loading = taxon_scores) %>%
     left_join(tax_df %>% rownames_to_column("taxon"), by = "taxon") %>%
     left_join(
-      clr_res %>% select(taxon, Phylum, Genus,
+      clr_res %>% select(taxon, Species,
                          clr_estimate = estimate, clr_q = q_value),
       by = "taxon"
     ) %>%
@@ -428,7 +428,7 @@ run_wilcoxon <- function(ps_rel, group_var, pos_level, neg_level) {
     pivot_longer(-sample_id, names_to = "taxon", values_to = "rel_abund") %>%
     left_join(meta_rel %>% rownames_to_column("sample_id"), by = "sample_id") %>%
     left_join(tax_rel  %>% rownames_to_column("taxon"),     by = "taxon") %>%
-    group_by(taxon, Genus) %>%
+    group_by(taxon, Genus, Species) %>%
     summarise(
       p_value  = wilcox.test(rel_abund ~ .data[[group_var]], exact = FALSE)$p.value,
       mean_pos = mean(rel_abund[.data[[group_var]] == pos_level], na.rm = TRUE),
@@ -623,12 +623,12 @@ clr_global <- run_clr_lm(
 
 
 global_healthy_enriched <- clr_global %>%
-  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
   head(10)
 
 global_sick_enriched <- clr_global %>%
-  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(-estimate) %>%
   head(10)
 
@@ -709,7 +709,7 @@ plot_rda_clr_comparison(
 ```{r a1-rda-clr-table}
 comp_global %>%
   arrange(desc(abs(rda1_loading))) %>%
-  select(Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  select(Genus, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
   head(20)
 ```
 
@@ -835,14 +835,14 @@ wilcox_china <- run_wilcoxon(
 wilcox_china %>%
   filter(q_value < 0.05) %>%
   arrange(-log2_fc) %>%
-  select(Genus, mean_pos, mean_neg, log2_fc, p_value, q_value) %>%
+  select(Genus, Species, mean_pos, mean_neg, log2_fc, p_value, q_value) %>%
   head(10)
 
 # Top healthy-enriched (negative log2FC)
 wilcox_china %>%
   filter(q_value < 0.05) %>%
   arrange(log2_fc) %>%
-  select(Genus, mean_pos, mean_neg, log2_fc, p_value, q_value) %>%
+  select(Genus, Species, mean_pos, mean_neg, log2_fc, p_value, q_value) %>%
   head(10)
 ```
 
@@ -878,7 +878,7 @@ bind_rows(
 ) %>%
   distinct() %>%
   mutate(direction = ifelse(log2_fc > 0, "Diabetic-enriched", "Healthy-enriched")) %>%
-  ggplot(aes(x = reorder(Genus, -q_value), y = log2_fc, fill = direction)) +
+  ggplot(aes(x = reorder(Species, -q_value), y = log2_fc, fill = direction)) +
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c(
@@ -904,12 +904,12 @@ clr_china <- run_clr_lm(
 
 
 china_healthy_enriched <- clr_china %>%
-  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
   head(10)
 
 china_sick_enriched <- clr_china %>%
-  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(-estimate) %>%
   head(10)
 
@@ -946,7 +946,7 @@ tibble(
 
 # Consensus taxa significant in both methods
 wilcox_china %>%
-  select(taxon, Genus, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
+  select(taxon, Genus, Species, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
   inner_join(
     clr_china %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
     by = "taxon"
@@ -1021,8 +1021,8 @@ plot_rda_clr_comparison(
 ```{r a2-rda-clr-table}
 comp_china %>%
   arrange(desc(abs(rda1_loading))) %>%
-  select(Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
-  head(5)
+  select(Genus, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  head(20)
 ```
 
 # Analysis 3: East vs. West — Geographical Differences in Diabetics
@@ -1144,14 +1144,14 @@ wilcox_we <- run_wilcoxon(
 wilcox_we %>%
   filter(q_value < 0.05) %>%
   arrange(-log2_fc) %>%
-  select(Genus, mean_pos, mean_neg, log2_fc, p_value, q_value) %>%
+  select(Genus, Species, mean_pos, mean_neg, log2_fc, p_value, q_value) %>%
   head(10)
 
 # Top China-enriched (negative log2FC)
 wilcox_we %>%
   filter(q_value < 0.05) %>%
   arrange(log2_fc) %>%
-  select(Genus, mean_pos, mean_neg, log2_fc, p_value, q_value) %>%
+  select(Genus, Species, mean_pos, mean_neg, log2_fc, p_value, q_value) %>%
   head(10)
 ```
 
@@ -1187,7 +1187,7 @@ bind_rows(
 ) %>%
   distinct() %>%
   mutate(direction = ifelse(log2_fc > 0, "Europe-enriched", "China-enriched")) %>%
-  ggplot(aes(x = reorder(Genus, -q_value), y = log2_fc, fill = direction)) +
+  ggplot(aes(x = reorder(Species, -q_value), y = log2_fc, fill = direction)) +
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c(
@@ -1214,12 +1214,12 @@ clr_we <- run_clr_lm(
 )
 
 we_china_enriched <- clr_we %>%
-  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
   head(10)
 
 we_europe_enriched <- clr_we %>%
-  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(-estimate) %>%
   head(10)
 
@@ -1257,7 +1257,7 @@ tibble(
 
 # Consensus taxa significant in both methods
 wilcox_we %>%
-  select(taxon, Genus, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
+  select(taxon, Genus, Species, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
   inner_join(
     clr_we %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
     by = "taxon"
@@ -1351,6 +1351,6 @@ plot_rda_clr_comparison(
 ```{r a3-rda-clr-table}
 comp_we %>%
   arrange((abs(clr_q))) %>%
-  select(taxon, Phylum, Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  select(taxon, Genus, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
   head(30)
 ```
