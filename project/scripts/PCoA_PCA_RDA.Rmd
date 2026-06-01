@@ -31,7 +31,7 @@ library(biomformat)
 # Data Loading
 ```{r load-data, include=FALSE}
 set.seed(42)
-Diabetes_path <- "../data/D003924_phyloseq_updated.RData"
+Diabetes_path <- "../data/D003924_phyloseq_updated_species.RData"
 ps <- get(load(Diabetes_path))
 ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
 ps_pa  <- transform_sample_counts(ps, function(x) ifelse(x > 0, 1, 0))
