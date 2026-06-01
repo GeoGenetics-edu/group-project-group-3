@@ -311,6 +311,7 @@ plot(dispersion_bray)
 
 # Differential Abundance
 ```{r continent-differential, fig.width=10, fig.height=8}
+
 rank_depth <- "Species"
 
 clr_mat <- as.data.frame(otu_table(microbiome::transform(rda_data, "clr")))
@@ -320,21 +321,30 @@ meta <- sample_data(rda_data) %>%
   data.frame() %>%
   rownames_to_column("SampleID")
 
+# Include all three variables in clr_long
 clr_long <- clr_mat %>%
   as.data.frame() %>%
   rownames_to_column("SampleID") %>%
   pivot_longer(-SampleID, names_to = "taxon", values_to = "clr") %>%
-  left_join(meta %>% select(SampleID, Continent), by = "SampleID") %>%
+  left_join(meta %>% select(SampleID, Continent, Host.age, Nr..reads.sequenced),
+            by = "SampleID") %>%
   left_join(tax_df %>% select(taxon, all_of(rank_depth)), by = "taxon")
+
+# Wilcoxon — tests Continent only (non-parametric, cannot include covariates)
+# Residualise clr against Host.age and Nr..reads.sequenced first
+clr_long <- clr_long %>%
+  group_by(taxon) %>%
+  mutate(clr_resid = residuals(lm(clr ~ Host.age + Nr..reads.sequenced))) %>%
+  ungroup()
 
 results <- clr_long %>%
   group_by(across(all_of(rank_depth))) %>%
   summarise(
-    mean_Asia   = mean(clr[Continent == "Asia"],   na.rm = TRUE),
-    mean_Europe = mean(clr[Continent == "Europe"], na.rm = TRUE),
+    mean_Asia   = mean(clr_resid[Continent == "Asia"],   na.rm = TRUE),
+    mean_Europe = mean(clr_resid[Continent == "Europe"], na.rm = TRUE),
     p_value     = wilcox.test(
-      clr[Continent == "Asia"],
-      clr[Continent == "Europe"]
+      clr_resid[Continent == "Asia"],
+      clr_resid[Continent == "Europe"]
     )$p.value,
     .groups = "drop"
   ) %>%
@@ -354,36 +364,36 @@ ggplot(results, aes(x = log2FC, y = -log10(p_adj), color = significant)) +
             size = 2.5, hjust = -0.1) +
   scale_color_manual(values = c("FALSE" = "grey70", "TRUE" = "#E74C3C")) +
   labs(
-    title = paste("Differential abundance between continents at", rank_depth, "level"),
-    x = "CLR difference (Asia - Europe)",
+    title = paste("Wilcoxon differential abundance at", rank_depth, "level"),
+    subtitle = "CLR residualised against Host.age and Nr..reads.sequenced",
+    x = "CLR residual difference (Asia - Europe)",
     y = "-log10(adjusted p-value)",
     color = "Significant\n(BH adj. p < 0.05)"
   ) +
   theme_bw()
 
-cat("Significant taxa (adj. p < 0.05):", sum(results$significant), "\n")
+cat("Wilcoxon significant taxa (adj. p < 0.05):", sum(results$significant), "\n")
 ```
 
 ```{r glm-differential, fig.width=10, fig.height=8}
 library(broom)
 
-# Run GLM for each taxon
 set.seed(42)
 glm_results <- clr_long %>%
   group_by(across(all_of(rank_depth))) %>%
-  do(tidy(glm(clr ~ Continent, data = ., family = gaussian()))) %>%
+  do(tidy(glm(clr ~ Continent + Host.age + Nr..reads.sequenced,
+              data = ., family = gaussian()))) %>%
   filter(term == "ContinentEurope") %>%
   ungroup() %>%
   mutate(
     p_adj       = p.adjust(p.value, method = "BH"),
     significant = p_adj < 0.05,
-    log2FC      = estimate  # GLM estimate ~ effect size
+    log2FC      = estimate
   ) %>%
   arrange(p_adj)
 
 cat("GLM significant taxa (adj. p < 0.05):", sum(glm_results$significant), "\n")
 
-# Volcano plot
 ggplot(glm_results, aes(x = log2FC, y = -log10(p_adj), color = significant)) +
   geom_point(size = 2, alpha = 0.7) +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
@@ -393,30 +403,30 @@ ggplot(glm_results, aes(x = log2FC, y = -log10(p_adj), color = significant)) +
             size = 2.5, hjust = -0.1) +
   scale_color_manual(values = c("FALSE" = "grey70", "TRUE" = "#E74C3C")) +
   labs(
-    title = paste("GLM differential abundance between continents at", rank_depth, "level"),
+    title = paste("GLM differential abundance at", rank_depth, "level"),
+    subtitle = "Controlling for Host.age and Nr..reads.sequenced",
     x = "GLM estimate (Asia - Europe)",
     y = "-log10(adjusted p-value)",
     color = "Significant\n(BH adj. p < 0.05)"
   ) +
   theme_bw()
 
-# Compare Wilcoxon vs GLM significant taxa
-cat("\nIn Wilcoxon but not GLM:\n")
-print(setdiff(
-  results %>% filter(significant) %>% pull(rank_depth),
-  glm_results %>% filter(significant) %>% pull(rank_depth)
-))
-
-cat("\nIn GLM but not Wilcoxon:\n")
-print(setdiff(
-  glm_results %>% filter(significant) %>% pull(rank_depth),
-  results %>% filter(significant) %>% pull(rank_depth)
-))
-
-cat("\nIn both:\n")
+cat("\nIn both tests:\n")
 print(intersect(
   results %>% filter(significant) %>% pull(rank_depth),
   glm_results %>% filter(significant) %>% pull(rank_depth)
+))
+
+cat("\nIn Wilcoxon only:\n")
+print(setdiff(
+  results %>% filter(significant) %>% pull(rank_depth),
+  glm_results %>% filter(significant) %>% pull(rank_depth)
+))
+
+cat("\nIn GLM only:\n")
+print(setdiff(
+  glm_results %>% filter(significant) %>% pull(rank_depth),
+  results %>% filter(significant) %>% pull(rank_depth)
 ))
 ```
 
@@ -465,6 +475,35 @@ ggplot(glm_sig_results, aes(x = log2FC,
   ) +
   theme_bw() +
   theme(axis.text.y = element_text(size = 8))
+```
+
+```{r both-significant-species-plot, fig.width=10, fig.height=8}
+# Taxa significant in both tests
+both_sig <- intersect(
+  results %>% filter(significant) %>% pull(.data[[rank_depth]]),
+  glm_results %>% filter(significant) %>% pull(.data[[rank_depth]])
+)
+
+both_sig_results <- glm_results %>%
+  filter(.data[[rank_depth]] %in% both_sig) %>%
+  mutate(direction = ifelse(log2FC > 0, "Higher in Asia", "Higher in Europe"))
+
+ggplot(both_sig_results, aes(x = log2FC,
+                               y = reorder(.data[[rank_depth]], log2FC),
+                               fill = direction)) +
+  geom_bar(stat = "identity") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  scale_fill_manual(values = c("Higher in Asia"   = "#E74C3C",
+                                "Higher in Europe" = "#3498DB")) +
+  labs(
+    title = paste("Taxa significant in both Wilcoxon and GLM at", rank_depth, "level"),
+    x = "GLM estimate (Asia - Europe)",
+    y = NULL, fill = NULL
+  ) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 8))
+
+cat("Taxa significant in both tests:", length(both_sig), "\n")
 ```
 
 ```{r test-comparison-plot, fig.width=10, fig.height=6}
