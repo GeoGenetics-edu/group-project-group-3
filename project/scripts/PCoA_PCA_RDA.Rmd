@@ -363,6 +363,63 @@ ggplot(results, aes(x = log2FC, y = -log10(p_adj), color = significant)) +
 
 cat("Significant taxa (adj. p < 0.05):", sum(results$significant), "\n")
 ```
+
+```{r glm-differential, fig.width=10, fig.height=8}
+library(broom)
+
+# Run GLM for each taxon
+set.seed(42)
+glm_results <- clr_long %>%
+  group_by(across(all_of(rank_depth))) %>%
+  do(tidy(glm(clr ~ Continent, data = ., family = gaussian()))) %>%
+  filter(term == "ContinentEurope") %>%
+  ungroup() %>%
+  mutate(
+    p_adj       = p.adjust(p.value, method = "BH"),
+    significant = p_adj < 0.05,
+    log2FC      = estimate  # GLM estimate ~ effect size
+  ) %>%
+  arrange(p_adj)
+
+cat("GLM significant taxa (adj. p < 0.05):", sum(glm_results$significant), "\n")
+
+# Volcano plot
+ggplot(glm_results, aes(x = log2FC, y = -log10(p_adj), color = significant)) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_text(data = glm_results %>% filter(significant) %>% slice_max(abs(log2FC), n = 15),
+            aes(label = .data[[rank_depth]]),
+            size = 2.5, hjust = -0.1) +
+  scale_color_manual(values = c("FALSE" = "grey70", "TRUE" = "#E74C3C")) +
+  labs(
+    title = paste("GLM differential abundance between continents at", rank_depth, "level"),
+    x = "GLM estimate (Asia - Europe)",
+    y = "-log10(adjusted p-value)",
+    color = "Significant\n(BH adj. p < 0.05)"
+  ) +
+  theme_bw()
+
+# Compare Wilcoxon vs GLM significant taxa
+cat("\nIn Wilcoxon but not GLM:\n")
+print(setdiff(
+  results %>% filter(significant) %>% pull(rank_depth),
+  glm_results %>% filter(significant) %>% pull(rank_depth)
+))
+
+cat("\nIn GLM but not Wilcoxon:\n")
+print(setdiff(
+  glm_results %>% filter(significant) %>% pull(rank_depth),
+  results %>% filter(significant) %>% pull(rank_depth)
+))
+
+cat("\nIn both:\n")
+print(intersect(
+  results %>% filter(significant) %>% pull(rank_depth),
+  glm_results %>% filter(significant) %>% pull(rank_depth)
+))
+```
+
 ```{r}
 head(tax_table(rda_data))
 colnames(tax_table(rda_data))
@@ -387,6 +444,72 @@ ggplot(sig_results, aes(x = log2FC,
   ) +
   theme_bw() +
   theme(axis.text.y = element_text(size = 8))
+```
+
+```{r glm-significant-species-plot, fig.width=10, fig.height=8}
+glm_sig_results <- glm_results %>%
+  filter(significant) %>%
+  mutate(direction = ifelse(log2FC > 0, "Higher in Asia", "Higher in Europe"))
+
+ggplot(glm_sig_results, aes(x = log2FC,
+                              y = reorder(.data[[rank_depth]], log2FC),
+                              fill = direction)) +
+  geom_bar(stat = "identity") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  scale_fill_manual(values = c("Higher in Asia"   = "#E74C3C",
+                                "Higher in Europe" = "#3498DB")) +
+  labs(
+    title = paste("GLM significant taxa between continents at", rank_depth, "level"),
+    x = "GLM estimate (Asia - Europe)",
+    y = NULL, fill = NULL
+  ) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 8))
+```
+
+```{r test-comparison-plot, fig.width=10, fig.height=6}
+# Combine results from both tests
+wilcox_sig <- results %>%
+  filter(significant) %>%
+  pull(.data[[rank_depth]])
+
+glm_sig <- glm_results %>%
+  filter(significant) %>%
+  pull(.data[[rank_depth]])
+
+# Create comparison dataframe
+all_taxa <- union(wilcox_sig, glm_sig)
+
+comparison_df <- tibble(
+  taxon = all_taxa,
+  Wilcoxon = all_taxa %in% wilcox_sig,
+  GLM      = all_taxa %in% glm_sig
+) %>%
+  mutate(
+    category = case_when(
+      Wilcoxon & GLM  ~ "Both",
+      Wilcoxon & !GLM ~ "Wilcoxon only",
+      !Wilcoxon & GLM ~ "GLM only"
+    )
+  )
+
+# Summary bar plot
+comparison_df %>%
+  count(category) %>%
+  ggplot(aes(x = category, y = n, fill = category)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = n), vjust = -0.5, size = 4) +
+  scale_fill_manual(values = c(
+    "Both"          = "#2ECC71",
+    "Wilcoxon only" = "#E74C3C",
+    "GLM only"      = "#3498DB"
+  )) +
+  labs(
+    title = "Significant taxa by test",
+    x = NULL, y = "Number of taxa", fill = NULL
+  ) +
+  theme_bw() +
+  theme(legend.position = "none")
 ```
 
 ```{r significant-tax-tree}
