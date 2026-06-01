@@ -34,7 +34,7 @@ library(broom.mixed)
 
 ## Load Data
 ```{r load-data}
-path <- "../data/D003924_Diabetes_Mellitus,_T/genus/phyloseq.RData"
+path <- "../data/D003924_phyloseq_updated.RData"
 ps <- get(load(path))
 
 meta <- as(sample_data(ps), "matrix") %>% as.data.frame()
@@ -242,7 +242,8 @@ run_clr_lm <- function(ps_clr, formula_str, term_filter) {
 
 # Volcano plot from CLR results
 plot_volcano <- function(clr_res, x_label, title,
-                         pos_label = "Enriched (+)", neg_label = "Enriched (-)") {
+                         pos_label = "Enriched (+)", neg_label = "Enriched (-)",
+                         pos_color = "#E74C3C", neg_color = "#3498DB") {
   clr_res %>%
     mutate(
       neg_log10_q = -log10(q_value),
@@ -254,8 +255,8 @@ plot_volcano <- function(clr_res, x_label, title,
     ) %>%
     ggplot(aes(x = estimate, y = neg_log10_q, color = direction)) +
       geom_point(alpha = 0.6, size = 2) +
-      scale_color_manual(values = c(setNames("#E74C3C", pos_label),
-                                    setNames("#3498DB", neg_label),
+      scale_color_manual(values = c(setNames(pos_color, pos_label),
+                                    setNames(neg_color, neg_label),
                                     "Not significant" = "grey60")) +
       geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey40") +
       geom_vline(xintercept = 0,            linetype = "dashed", color = "grey40") +
@@ -265,7 +266,8 @@ plot_volcano <- function(clr_res, x_label, title,
 
 # Top-taxa bar chart from CLR results
 plot_top_taxa <- function(clr_res, n = 10, x_label, title,
-                          pos_label = "Enriched (+)", neg_label = "Enriched (-)") {
+                          pos_label = "Enriched (+)", neg_label = "Enriched (-)",
+                          pos_color = "#E74C3C", neg_color = "#3498DB") {
   bind_rows(
     clr_res %>% filter(q_value < 0.05) %>% arrange(estimate)  %>% head(n),
     clr_res %>% filter(q_value < 0.05) %>% arrange(-estimate) %>% head(n)
@@ -275,8 +277,8 @@ plot_top_taxa <- function(clr_res, n = 10, x_label, title,
     ggplot(aes(x = reorder(Species, -q_value), y = estimate, fill = direction)) +
       geom_col() +
       coord_flip() +
-      scale_fill_manual(values = c(setNames("#E74C3C", pos_label),
-                                   setNames("#3498DB", neg_label))) +
+      scale_fill_manual(values = c(setNames(pos_color, pos_label),
+                                   setNames(neg_color, neg_label))) +
       labs(x = NULL, y = x_label, fill = NULL, title = title) +
       theme_bw()
 }
@@ -969,13 +971,17 @@ plot_volcano(clr_we,
              x_label   = "CLR estimate (West vs China, diabetics)",
              title     = "CLR volcano — diabetics: West vs. China",
              pos_label = "West-enriched",
-             neg_label = "China-enriched")
+             neg_label = "China-enriched",
+             pos_color = "#3498DB",
+             neg_color = "#E74C3C")
 
 plot_top_taxa(clr_we,
               x_label   = "CLR estimate (West vs China, diabetics)",
               title     = "Top differentially abundant taxa — East vs. West (diabetics)",
               pos_label = "West-enriched",
-              neg_label = "China-enriched")
+              neg_label = "China-enriched",
+              pos_color = "#3498DB",
+              neg_color = "#E74C3C")
 ```
 
 ### PCA of CLR Profiles
