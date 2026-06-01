@@ -875,18 +875,18 @@ clr_we <- run_clr_lm(
   term_filter = "countryEurope"
 )
 
-we_healthy_enriched <- clr_we %>%
+we_china_enriched <- clr_we %>%
   select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
   head(10)
 
-we_sick_enriched <- clr_we %>%
+we_europe_enriched <- clr_we %>%
   select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(-estimate) %>%
   head(10)
 
-we_healthy_enriched
-we_sick_enriched
+we_china_enriched
+we_europe_enriched
 ```
 
 ```{r}
@@ -978,6 +978,6 @@ plot_rda_clr_comparison(
 ```{r a3-rda-clr-table}
 comp_we %>%
   arrange((abs(clr_q))) %>%
-  select(Genus.x, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  select(taxon, Genus.x, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
   head(30)
 ```
