@@ -109,6 +109,10 @@ ps_clr <- microbiome::transform(
 # Subsets
 ps_t2d        <- subset_samples(ps_clean, Disease == "T2D")
 ps_t2d_female <- subset_samples(ps_t2d, Sex == "Female")
+ps_clr_female <- microbiome::transform(
+  transform_sample_counts(ps_t2d_female, function(x) x + 1),  # add pseudocount first
+  transform = "clr"
+)
 
 cat("T2D samples by continent:\n")
 print(table(sample_data(ps_t2d)$Continent))
@@ -128,7 +132,64 @@ sample_data(ps_clean) %>%
   labs(title = "Distribution of T2D and Healthy samples",
        x = "Continent", y = "Number of samples", fill = "Disease") +
   theme_bw()
+
+sample_data(ps_clean) %>%
+  data.frame() %>%
+  count(Sex, Continent) %>%
+  ggplot(aes(x = Continent, y = n, fill = Sex)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = n), position = position_dodge(width = 0.9),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("Male" = "#3498DB", "Female" = "#E74C3C")) +
+  labs(title = "Distribution of Sex by Continent",
+       x = "Continent", y = "Number of samples", fill = "Sex") +
+  theme_bw()
 ```
+
+```{r t2d-female-distribution}
+sample_data(ps_clean) %>%
+  data.frame() %>%
+  count(Disease, Sex, Continent) %>%
+  ggplot(aes(x = Continent, y = n, fill = Disease, alpha = Sex)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = n), position = position_dodge(width = 0.9),
+            vjust = -0.5, size = 3.5) +
+  scale_fill_manual(values = c("T2D" = "#E74C3C", "Healthy" = "#3498DB")) +
+  scale_alpha_manual(values = c("Male" = 0.5, "Female" = 1.0)) +
+  labs(title = "Disease and Sex distribution in T2D female subset",
+       x = "Continent", y = "Number of samples",
+       fill = "Disease", alpha = "Sex") +
+  theme_bw()
+```
+```{r}
+sample_data(ps) %>%
+  data.frame() %>%
+  filter(!is.na(Host.age)) %>%
+  ggplot(aes(x = Country, y = Host.age, fill = Country)) +
+  geom_violin(alpha = 0.6) +
+  geom_boxplot(width = 0.2, outlier.shape = NA, alpha = 0.8) +
+  geom_jitter(width = 0.1, size = 1, alpha = 0.4) +
+  labs(title = "Age distribution by Country (raw data)",
+       x = "Country", y = "Host Age", fill = "Country") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none")
+```
+
+```{r}
+sample_data(ps_clean) %>%
+  data.frame() %>%
+  ggplot(aes(x = Continent, y = Host.age, fill = Continent)) +
+  geom_violin(alpha = 0.6) +
+  geom_boxplot(width = 0.2, outlier.shape = NA, alpha = 0.8) +
+  geom_jitter(width = 0.1, size = 1, alpha = 0.4) +
+  scale_fill_manual(values = c("Asia" = "#E74C3C", "Europe" = "#3498DB")) +
+  facet_wrap(~ Disease) +
+  labs(title = "Age distribution by Continent and Disease",
+       x = "Continent", y = "Host Age", fill = "Continent") +
+  theme_bw()
+```
+
 
 # Distances
 ```{r distances, include=FALSE}
@@ -153,21 +214,21 @@ cor.test(alpha_div$Shannon, alpha_div$Host.age, method = "spearman")
 # Beta Diversity
 ## PCoA
 ```{r pcoa-plot, fig.width=8, fig.height=5}
-ord_bray <- ordinate(ps_rel_cleaned, method = "PCoA", distance = bray_dist)
+ord_bray <- ordinate(ps_t2d_female, method = "PCoA", distance = bray_dist)
 
-plot_ordination(ps_rel_cleaned, ord_bray, type = "samples",
-                color = "Country", shape = "Sex") +
+plot_ordination(ps_t2d_female, ord_bray, type = "samples",
+                color = "Continent", shape = "Sex") +
   geom_point(size = 3) +
   theme_bw()
 ```
 
 ```{r pcoa-clr, fig.width=8, fig.height=5}
 # Aitchison distance = CLR + Euclidean (correct combination)
-aitchison_dist <- distance(ps_clr, method = "euclidean")
-ord_aitchison  <- ordinate(ps_clr, method = "PCoA", distance = aitchison_dist)
+aitchison_dist <- distance(ps_clr_female, method = "euclidean")
+ord_aitchison  <- ordinate(ps_clr_female, method = "PCoA", distance = aitchison_dist)
 
-plot_ordination(ps_clr, ord_aitchison, type = "samples",
-                color = "Disease", shape = "Continent") +
+plot_ordination(ps_clr_female, ord_aitchison, type = "samples",
+                color = "Continent") +
   geom_point(size = 3) +
   theme_bw() +
   labs(title = "PCoA — Aitchison distance (CLR + Euclidean)")
@@ -175,10 +236,10 @@ plot_ordination(ps_clr, ord_aitchison, type = "samples",
 
 ## NMDS
 ```{r nmds-bray, fig.width=8, fig.height=5}
-ord_nmds <- ordinate(ps_rel_cleaned, method = "NMDS", distance = "bray")
+ord_nmds <- ordinate(ps_t2d_female, method = "NMDS", distance = "bray")
 
-plot_ordination(ps_rel_cleaned, ord_nmds, type = "samples",
-                color = "Disease", shape = "Continent") +
+plot_ordination(ps_t2d_female, ord_nmds, type = "samples",
+                color = "Continent") +
   geom_point(size = 3) +
   theme_bw()
 ```
