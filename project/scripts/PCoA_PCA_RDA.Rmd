@@ -26,6 +26,8 @@ library(lmerTest)
 library(broom.mixed)
 library(microbiome)
 library(biomformat)
+library(broom)
+library(Maaslin2)
 ```
 
 # Data Loading
@@ -113,6 +115,9 @@ ps_clr_female <- microbiome::transform(
   transform_sample_counts(ps_t2d_female, function(x) x + 1),  # add pseudocount first
   transform = "clr"
 )
+bray_dist_t2d    <- distance(ps_t2d_female, method = "bray")
+meta_df      <- sample_data(ps_t2d_female) %>% data.frame()
+meta_df_join <- meta_df %>% rownames_to_column("SampleID")
 
 cat("T2D samples by continent:\n")
 print(table(sample_data(ps_t2d)$Continent))
@@ -214,7 +219,7 @@ cor.test(alpha_div$Shannon, alpha_div$Host.age, method = "spearman")
 # Beta Diversity
 ## PCoA
 ```{r pcoa-plot, fig.width=8, fig.height=5}
-ord_bray <- ordinate(ps_t2d_female, method = "PCoA", distance = bray_dist)
+ord_bray <- ordinate(ps_t2d_female, method = "PCoA", distance = bray_dist_t2d)
 
 plot_ordination(ps_t2d_female, ord_bray, type = "samples",
                 color = "Continent", shape = "Sex") +
@@ -352,280 +357,316 @@ anova(rda_result, by = "term", permutations = 999)
 
 # PERMANOVA & Dispersion
 ```{r extract-sample-metadata}
-sample_df <- sample_data(ps_clean) %>% data.frame()
+sample_df <- sample_data(ps_t2d_female) %>% data.frame()
+
 ```
 
 ```{r permanova-bray}
-adonis_bray <- adonis2(
-  bray_dist ~ Sex + Country,
+adonis_res <- adonis2(
+  bray_dist_t2d ~ Continent + Host.age + Nr..reads.sequenced,
   data = sample_df,
   permutations = 999
 )
-adonis_bray
+
+adonis_res
 ```
 
 ```{r dispersion-test}
-dispersion_bray <- betadisper(bray_dist, sample_df$Disease)
-anova(dispersion_bray)
+dispersion_bray <- betadisper(
+  bray_dist_t2d,
+  sample_df$Continent
+)
+
+permutest(dispersion_bray, permutations = 999)
 plot(dispersion_bray)
 ```
+
+```{r}
+adonis_df <- as.data.frame(adonis_res) %>%
+  rownames_to_column("term") %>%
+  filter(!term %in% c("Total", "Residual"))
+
+adonis_df <- adonis_df %>%
+  mutate(
+    sig = case_when(
+      `Pr(>F)` < 0.001 ~ "***",
+      `Pr(>F)` < 0.01  ~ "**",
+      `Pr(>F)` < 0.05  ~ "*",
+      TRUE ~ ""
+    )
+  )
+
+ggplot(
+  adonis_df,
+  aes(x = reorder(term, R2), y = R2)
+) +
+  geom_col(fill = "#3498DB") +
+  geom_text(
+    aes(label = sig),
+    hjust = -0.2
+  ) +
+  coord_flip() +
+  expand_limits(y = max(adonis_df$R2) * 1.1) +
+  labs(
+    title = "PERMANOVA variance explained",
+    x = NULL,
+    y = expression(R^2)
+  ) +
+  theme_bw()
+
+ord <- ordinate(
+  rda_data,
+  method = "PCoA",
+  distance = "bray"
+)
+
+continent_p <- adonis_res$`Pr(>F)`[1]
+continent_r2 <- adonis_res$R2[1]
+
+plot_ordination(
+  rda_data,
+  ord,
+  color = "Continent"
+) +
+  geom_point(size = 3) +
+  stat_ellipse() +
+  labs(
+    title = paste0(
+      "PCoA (Bray-Curtis)\n",
+      "PERMANOVA: p = ",
+      signif(continent_p, 3),
+      ", R² = ",
+      round(continent_r2, 3)
+    )
+  )
+```
+```{r build-clr-long}
+rank_depth <- "Species"
+
+# CLR matrix from already-computed phyloseq object
+otu_clr_lm <- as.data.frame(otu_table(ps_clr_female))
+if (taxa_are_rows(ps_clr_female)) otu_clr_lm <- t(otu_clr_lm)
+otu_clr_lm <- as.data.frame(otu_clr_lm)
+
+clr_long <- otu_clr_lm %>%
+  rownames_to_column("SampleID") %>%
+  pivot_longer(
+    cols = -SampleID,
+    names_to = "taxon",
+    values_to = "clr"
+  ) %>%
+  left_join(meta_df_join, by = "SampleID") %>%
+  left_join(
+    tax_df %>% select(taxon, all_of(rank_depth)),
+    by = "taxon"
+  )
+```
+
 
 # Differential Abundance
 ```{r continent-differential, fig.width=10, fig.height=8}
 
-rank_depth <- "Species"
-
-clr_mat <- as.data.frame(otu_table(microbiome::transform(rda_data, "clr")))
-if (taxa_are_rows(rda_data)) clr_mat <- t(clr_mat)
-
-meta <- sample_data(rda_data) %>%
-  data.frame() %>%
-  rownames_to_column("SampleID")
-
-# Include all three variables in clr_long
-clr_long <- clr_mat %>%
-  as.data.frame() %>%
-  rownames_to_column("SampleID") %>%
-  pivot_longer(-SampleID, names_to = "taxon", values_to = "clr") %>%
-  left_join(meta %>% select(SampleID, Continent, Host.age, Nr..reads.sequenced),
-            by = "SampleID") %>%
-  left_join(tax_df %>% select(taxon, all_of(rank_depth)), by = "taxon")
-
-# Wilcoxon — tests Continent only (non-parametric, cannot include covariates)
-# Residualise clr against Host.age and Nr..reads.sequenced first
-clr_long <- clr_long %>%
-  group_by(taxon) %>%
-  mutate(clr_resid = residuals(lm(clr ~ Host.age + Nr..reads.sequenced))) %>%
-  ungroup()
-
-results <- clr_long %>%
+lm_results <- clr_long %>%
   group_by(across(all_of(rank_depth))) %>%
-  summarise(
-    mean_Asia   = mean(clr_resid[Continent == "Asia"],   na.rm = TRUE),
-    mean_Europe = mean(clr_resid[Continent == "Europe"], na.rm = TRUE),
-    p_value     = wilcox.test(
-      clr_resid[Continent == "Asia"],
-      clr_resid[Continent == "Europe"]
-    )$p.value,
-    .groups = "drop"
+  do(
+    tidy(
+      lm(
+        clr ~ Continent + Host.age + Nr..reads.sequenced,
+        data = .
+      )
+    )
   ) %>%
+  filter(term == "ContinentEurope") %>%
+  ungroup() %>%
   mutate(
-    p_adj       = p.adjust(p_value, method = "BH"),
-    log2FC      = mean_Asia - mean_Europe,
+    p_adj = p.adjust(p.value, method = "BH"),
     significant = p_adj < 0.05
   ) %>%
   arrange(p_adj)
 
-ggplot(results, aes(x = log2FC, y = -log10(p_adj), color = significant)) +
+ggplot(
+  lm_results,
+  aes(
+    x = estimate,
+    y = -log10(p_adj),
+    color = significant
+  )
+) +
   geom_point(size = 2, alpha = 0.7) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_text(data = results %>% filter(significant) %>% slice_max(abs(log2FC), n = 15),
-            aes(label = .data[[rank_depth]]),
-            size = 2.5, hjust = -0.1) +
-  scale_color_manual(values = c("FALSE" = "grey70", "TRUE" = "#E74C3C")) +
+  geom_hline(
+    yintercept = -log10(0.05),
+    linetype = "dashed",
+    color = "grey50"
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed",
+    color = "grey50"
+  ) +
+  geom_text(
+    data = lm_results %>%
+      filter(significant) %>%
+      slice_max(abs(estimate), n = 15),
+    aes(label = .data[[rank_depth]]),
+    size = 2.5
+  ) +
+  scale_color_manual(
+    values = c(
+      "FALSE" = "grey70",
+      "TRUE" = "#E74C3C"
+    )
+  ) +
   labs(
-    title = paste("Wilcoxon differential abundance at", rank_depth, "level"),
-    subtitle = "CLR residualised against Host.age and Nr..reads.sequenced",
-    x = "CLR residual difference (Asia - Europe)",
-    y = "-log10(adjusted p-value)",
-    color = "Significant\n(BH adj. p < 0.05)"
+    title = paste("Differential abundance at", rank_depth, "level"),
+    subtitle = "Linear model controlling for Host.age and sequencing depth",
+    x = "Continent coefficient (CLR difference)",
+    y = "-log10(BH-adjusted p-value)"
   ) +
   theme_bw()
 
-cat("Wilcoxon significant taxa (adj. p < 0.05):", sum(results$significant), "\n")
-```
-
-```{r glm-differential, fig.width=10, fig.height=8}
-library(broom)
-
-set.seed(42)
-glm_results <- clr_long %>%
-  group_by(across(all_of(rank_depth))) %>%
-  do(tidy(glm(clr ~ Continent + Host.age + Nr..reads.sequenced,
-              data = ., family = gaussian()))) %>%
-  filter(term == "ContinentEurope") %>%
-  ungroup() %>%
-  mutate(
-    p_adj       = p.adjust(p.value, method = "BH"),
-    significant = p_adj < 0.05,
-    log2FC      = estimate
-  ) %>%
+sig_taxa <- lm_results %>%
+  filter(significant) %>%
   arrange(p_adj)
 
-cat("GLM significant taxa (adj. p < 0.05):", sum(glm_results$significant), "\n")
+sig_taxa
 
-ggplot(glm_results, aes(x = log2FC, y = -log10(p_adj), color = significant)) +
-  geom_point(size = 2, alpha = 0.7) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  geom_text(data = glm_results %>% filter(significant) %>% slice_max(abs(log2FC), n = 15),
-            aes(label = .data[[rank_depth]]),
-            size = 2.5, hjust = -0.1) +
-  scale_color_manual(values = c("FALSE" = "grey70", "TRUE" = "#E74C3C")) +
-  labs(
-    title = paste("GLM differential abundance at", rank_depth, "level"),
-    subtitle = "Controlling for Host.age and Nr..reads.sequenced",
-    x = "GLM estimate (Asia - Europe)",
-    y = "-log10(adjusted p-value)",
-    color = "Significant\n(BH adj. p < 0.05)"
-  ) +
-  theme_bw()
-
-cat("\nIn both tests:\n")
-print(intersect(
-  results %>% filter(significant) %>% pull(rank_depth),
-  glm_results %>% filter(significant) %>% pull(rank_depth)
-))
-
-cat("\nIn Wilcoxon only:\n")
-print(setdiff(
-  results %>% filter(significant) %>% pull(rank_depth),
-  glm_results %>% filter(significant) %>% pull(rank_depth)
-))
-
-cat("\nIn GLM only:\n")
-print(setdiff(
-  glm_results %>% filter(significant) %>% pull(rank_depth),
-  results %>% filter(significant) %>% pull(rank_depth)
-))
+cat(
+  "Significant taxa (BH-adjusted p < 0.05):",
+  nrow(sig_taxa),
+  "\n"
+)
 ```
+
+
 
 ```{r}
 head(tax_table(rda_data))
 colnames(tax_table(rda_data))
 ```
 
-```{r significant-species-plot, fig.width=10, fig.height=8}
-sig_results <- results %>%
-  filter(significant) %>%
-  mutate(direction = ifelse(log2FC > 0, "Higher in Asia", "Higher in Europe"))
+```{r lm-significant-species-plot, fig.width=10, fig.height=8}
+glm_sig_results <- lm_results %>%
+  filter(significant, !is.na(.data[[rank_depth]]),
+         abs(estimate) > 0.01) %>%
+  mutate(direction = ifelse(estimate > 0, "Higher in Europe", "Higher in Asia"))
 
-ggplot(sig_results, aes(x = log2FC,
-                         y = reorder(.data[[rank_depth]], log2FC),
-                         fill = direction)) +
-  geom_bar(stat = "identity") +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  scale_fill_manual(values = c("Higher in Asia"   = "#E74C3C",
-                                "Higher in Europe" = "#3498DB")) +
+ggplot(
+  glm_sig_results,
+  aes(
+    x = estimate,
+    y = reorder(.data[[rank_depth]], estimate),
+    fill = direction
+  )
+) +
+  geom_col() +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed",
+    color = "grey50"
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Higher in Asia"   = "#E74C3C",
+      "Higher in Europe" = "#3498DB"
+    )
+  ) +
   labs(
-    title = paste("Significant taxa between continents at", rank_depth, "level"),
-    x = "CLR difference (Asia - Europe)",
-    y = NULL, fill = NULL
+    title = paste(
+      "Significant taxa between continents at",
+      rank_depth,
+      "level"
+    ),
+    subtitle = "Linear model controlling for Host.age and sequencing depth",
+    x = "Continent coefficient (Europe - Asia, CLR scale)",
+    y = NULL,
+    fill = NULL
   ) +
   theme_bw() +
-  theme(axis.text.y = element_text(size = 8))
+  theme(
+    axis.text.y = element_text(size = 8)
+  )
 ```
 
-```{r glm-significant-species-plot, fig.width=10, fig.height=8}
-glm_sig_results <- glm_results %>%
-  filter(significant) %>%
-  mutate(direction = ifelse(log2FC > 0, "Higher in Asia", "Higher in Europe"))
 
-ggplot(glm_sig_results, aes(x = log2FC,
-                              y = reorder(.data[[rank_depth]], log2FC),
-                              fill = direction)) +
-  geom_bar(stat = "identity") +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  scale_fill_manual(values = c("Higher in Asia"   = "#E74C3C",
-                                "Higher in Europe" = "#3498DB")) +
-  labs(
-    title = paste("GLM significant taxa between continents at", rank_depth, "level"),
-    x = "GLM estimate (Asia - Europe)",
-    y = NULL, fill = NULL
-  ) +
-  theme_bw() +
-  theme(axis.text.y = element_text(size = 8))
-```
 
-```{r both-significant-species-plot, fig.width=10, fig.height=8}
-# Taxa significant in both tests
-both_sig <- intersect(
-  results %>% filter(significant) %>% pull(.data[[rank_depth]]),
-  glm_results %>% filter(significant) %>% pull(.data[[rank_depth]])
+```{r maaslin2-analysis}
+# Features: CLR from already-computed phyloseq object
+feature_df <- as.data.frame(otu_table(ps_clr_female))
+if (taxa_are_rows(ps_clr_female)) feature_df <- t(feature_df)
+feature_df <- as.data.frame(feature_df)
+
+output_dir <- "Maaslin2_output"
+unlink(output_dir, recursive = TRUE)
+
+# meta_df must have rownames as sample IDs (do not use rownames_to_column)
+fit_data <- Maaslin2(
+  input_data      = feature_df,
+  input_metadata  = meta_df,
+  output          = output_dir,
+  fixed_effects   = c("Continent", "Host.age", "Nr..reads.sequenced"),
+  normalization   = "NONE",
+  transform       = "NONE",
+  analysis_method = "LM",
+  standardize     = FALSE,
+  plot_heatmap    = FALSE,
+  plot_scatter    = FALSE
 )
 
-both_sig_results <- glm_results %>%
-  filter(.data[[rank_depth]] %in% both_sig) %>%
-  mutate(direction = ifelse(log2FC > 0, "Higher in Asia", "Higher in Europe"))
+maaslin_results <- read.delim(file.path(output_dir, "all_results.tsv")) %>%
+  mutate(feature = str_remove(feature, "^X")) %>%  # strip auto-added X prefix
+  filter(metadata == "Continent") %>%
+  mutate(significant = qval < 0.05) %>%
+  left_join(
+    tax_df %>% select(taxon, all_of(rank_depth)),
+    by = c("feature" = "taxon")
+  )
 
-ggplot(both_sig_results, aes(x = log2FC,
-                               y = reorder(.data[[rank_depth]], log2FC),
-                               fill = direction)) +
-  geom_bar(stat = "identity") +
+cat("MaAsLin2 significant taxa:", sum(maaslin_results$significant), "\n")
+```
+
+```{r maaslin2-significant-species-plot, fig.width=10, fig.height=8}
+maaslin_sig_results <- maaslin_results %>%
+  filter(significant, !is.na(.data[[rank_depth]])) %>%
+  mutate(
+    direction = ifelse(coef > 0.01, "Higher in Europe", "Higher in Asia")
+  )
+
+ggplot(
+  maaslin_sig_results,
+  aes(
+    x = coef,
+    y = reorder(.data[[rank_depth]], coef),
+    fill = direction
+  )
+) +
+  geom_col() +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
-  scale_fill_manual(values = c("Higher in Asia"   = "#E74C3C",
-                                "Higher in Europe" = "#3498DB")) +
+  scale_fill_manual(
+    values = c("Higher in Asia" = "#E74C3C", "Higher in Europe" = "#3498DB")
+  ) +
   labs(
-    title = paste("Taxa significant in both Wilcoxon and GLM at", rank_depth, "level"),
-    x = "GLM estimate (Asia - Europe)",
-    y = NULL, fill = NULL
+    title = paste("MaAsLin2 significant taxa at", rank_depth, "level"),
+    x = "Continent coefficient",
+    y = NULL,
+    fill = NULL
   ) +
   theme_bw() +
   theme(axis.text.y = element_text(size = 8))
-
-cat("Taxa significant in both tests:", length(both_sig), "\n")
 ```
 
-```{r test-comparison-plot, fig.width=10, fig.height=6}
-# Combine results from both tests
-wilcox_sig <- results %>%
-  filter(significant) %>%
-  pull(.data[[rank_depth]])
 
-glm_sig <- glm_results %>%
-  filter(significant) %>%
-  pull(.data[[rank_depth]])
-
-# Create comparison dataframe
-all_taxa <- union(wilcox_sig, glm_sig)
-
-comparison_df <- tibble(
-  taxon = all_taxa,
-  Wilcoxon = all_taxa %in% wilcox_sig,
-  GLM      = all_taxa %in% glm_sig
-) %>%
-  mutate(
-    category = case_when(
-      Wilcoxon & GLM  ~ "Both",
-      Wilcoxon & !GLM ~ "Wilcoxon only",
-      !Wilcoxon & GLM ~ "GLM only"
-    )
-  )
-
-# Summary bar plot
-comparison_df %>%
-  count(category) %>%
-  ggplot(aes(x = category, y = n, fill = category)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
-  scale_fill_manual(values = c(
-    "Both"          = "#2ECC71",
-    "Wilcoxon only" = "#E74C3C",
-    "GLM only"      = "#3498DB"
-  )) +
-  labs(
-    title = "Significant taxa by test",
-    x = NULL, y = "Number of taxa", fill = NULL
-  ) +
-  theme_bw() +
-  theme(legend.position = "none")
-```
 
 ```{r significant-tax-tree}
-# Get significant taxon IDs
-sig_taxa <- clr_long %>%
-  left_join(results %>% filter(significant), by = rank_depth) %>%
-  filter(significant == TRUE) %>%
-  pull(taxon) %>%
+sig_taxa <- lm_results %>%
+  filter(significant) %>%
+  pull(Species) %>%
   unique()
 
-# Extract full taxonomy for significant taxa
 tax_table(rda_data) %>%
   as.data.frame() %>%
   rownames_to_column("taxon") %>%
-  filter(taxon %in% sig_taxa) %>%
   mutate(across(-taxon, ~str_remove(., "^[a-z]__"))) %>%
+  filter(Species %in% sig_taxa) %>%
   select(Domain, Phylum, Class, Order, Family, Genus, Species) %>%
   distinct() %>%
   arrange(Phylum, Class, Order, Family, Genus) %>%
