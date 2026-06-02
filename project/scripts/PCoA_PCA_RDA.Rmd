@@ -465,6 +465,7 @@ clr_long <- otu_clr_lm %>%
 
 # Differential Abundance
 ```{r continent-differential, fig.width=10, fig.height=8}
+effect_threshold <- 0.01
 
 lm_results <- clr_long %>%
   group_by(across(all_of(rank_depth))) %>%
@@ -480,7 +481,9 @@ lm_results <- clr_long %>%
   ungroup() %>%
   mutate(
     p_adj = p.adjust(p.value, method = "BH"),
-    significant = p_adj < 0.05
+    significant = p_adj < 0.05,
+    practical = abs(estimate) >= effect_threshold,
+    significant_practical = significant & practical
   ) %>%
   arrange(p_adj)
 
@@ -489,8 +492,14 @@ ggplot(
   aes(
     x = estimate,
     y = -log10(p_adj),
-    color = significant
+    color = significant_practical
   )
+) + geom_rect(
+  aes(xmin = -effect_threshold, xmax = effect_threshold,
+      ymin = -Inf, ymax = Inf),
+  inherit.aes = FALSE,
+  fill = "grey80",
+  alpha = 0.2
 ) +
   geom_point(size = 2, alpha = 0.7) +
   geom_hline(
@@ -511,11 +520,11 @@ ggplot(
     size = 2.5
   ) +
   scale_color_manual(
-    values = c(
-      "FALSE" = "grey70",
-      "TRUE" = "#E74C3C"
-    )
-  ) +
+  values = c(
+    "FALSE" = "grey70",
+    "TRUE" = "#E74C3C"
+  )
+)  +
   labs(
     title = paste("Differential abundance at", rank_depth, "level"),
     subtitle = "Linear model controlling for Host.age and sequencing depth",
@@ -525,13 +534,14 @@ ggplot(
   theme_bw()
 
 sig_taxa <- lm_results %>%
-  filter(significant) %>%
+  filter(significant_practical) %>%
   arrange(p_adj)
 
 sig_taxa
 
 cat(
-  "Significant taxa (BH-adjusted p < 0.05):",
+  "Significant + practically meaningful taxa (BH < 0.05 & |estimate| ≥",
+  effect_threshold, "):",
   nrow(sig_taxa),
   "\n"
 )
