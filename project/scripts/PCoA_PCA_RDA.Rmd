@@ -557,7 +557,7 @@ colnames(tax_table(rda_data))
 ```{r lm-significant-species-plot, fig.width=10, fig.height=8}
 glm_sig_results <- lm_results %>%
   filter(significant, !is.na(.data[[rank_depth]]),
-         abs(estimate) > 0.01) %>%
+         abs(estimate) > effect_threshold) %>%
   mutate(direction = ifelse(estimate > 0, "Higher in Europe", "Higher in Asia"))
 
 ggplot(
@@ -632,6 +632,32 @@ maaslin_results <- read.delim(file.path(output_dir, "all_results.tsv")) %>%
   )
 
 cat("MaAsLin2 significant taxa:", sum(maaslin_results$significant), "\n")
+```
+
+```{r maaslin2-volcano, fig.width=10, fig.height=8}
+ggplot(
+  maaslin_results,
+  aes(x = coef, y = -log10(qval), color = significant)
+) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50") +
+  geom_text(
+    data = maaslin_results %>%
+      filter(significant, !is.na(.data[[rank_depth]])) %>%
+      slice_max(abs(coef), n = 15),
+    aes(label = .data[[rank_depth]]),
+    size = 2.5, hjust = -0.1
+  ) +
+  scale_color_manual(values = c("FALSE" = "grey70", "TRUE" = "#E74C3C")) +
+  labs(
+    title = paste("MaAsLin2 differential abundance at", rank_depth, "level"),
+    subtitle = "Controlling for Host.age and sequencing depth",
+    x = "Continent coefficient (CLR difference)",
+    y = "-log10(FDR-adjusted p-value)",
+    color = "Significant\n(FDR < 0.05)"
+  ) +
+  theme_bw()
 ```
 
 ```{r maaslin2-significant-species-plot, fig.width=10, fig.height=8}
