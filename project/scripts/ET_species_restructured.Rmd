@@ -1,6 +1,11 @@
 ---
-title: "Gut Microbiome Analysis: Diabetes and Geography"
-output: html_document
+title: "Species, diabetes data set"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+        collapsed: false
+        smooth_scroll: true
 ---
 
 # Overview
@@ -273,7 +278,7 @@ plot_top_taxa <- function(clr_res, n = 10, x_label, title,
   ) %>%
     distinct() %>%
     mutate(direction = ifelse(estimate > 0, pos_label, neg_label)) %>%
-    ggplot(aes(x = reorder(Species, -q_value), y = estimate, fill = direction)) +
+    ggplot(aes(x = reorder(Species, estimate), y = estimate, fill = direction)) +
       geom_col() +
       coord_flip() +
       scale_fill_manual(values = c(setNames(pos_color, pos_label),
@@ -745,6 +750,14 @@ plot_richness(ps_china, measures = "Shannon", color = "Disease.MESH.ID") +
 run_kruskal(alpha_china, "Shannon", "Disease.MESH.ID")
 run_pairwise_wilcoxon(alpha_china, "Shannon", "Disease.MESH.ID")
 ```
+```{r}
+ggplot(alpha_china, aes(x = Disease.MESH.ID, y = Shannon, fill = Disease.MESH.ID)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  theme_bw() +
+  scale_fill_manual(values = c("#E74C3C", "#3498DB"))
+```
+
 
 ### Sequencing depth vs. Shannon
 ```{r a2-depth-shannon}
@@ -878,7 +891,7 @@ bind_rows(
 ) %>%
   distinct() %>%
   mutate(direction = ifelse(log2_fc > 0, "Diabetic-enriched", "Healthy-enriched")) %>%
-  ggplot(aes(x = reorder(Species, -q_value), y = log2_fc, fill = direction)) +
+  ggplot(aes(x = reorder(Species, log2_fc), y = log2_fc, fill = direction)) +
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c(
@@ -1049,13 +1062,21 @@ plot_bar(we_genus_sampled, fill = "Genus") +
 alpha_we <- make_alpha_df(ps_we, we_t$pa)
 
 plot_richness(ps_we, measures = "Shannon", color = "Country") +
-  scale_color_manual(values = c("China" = "#E74C3C", "West" = "#3498DB")) +
+  scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
   labs(title = "Shannon diversity — diabetics by geography") +
   theme_bw()
 
 run_kruskal(alpha_we, "Shannon", "Country")
 run_pairwise_wilcoxon(alpha_we, "Shannon", "Country")
 ```
+```{r}
+ggplot(alpha_we, aes(x = Country, y = Shannon, fill = Country)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  theme_bw() +
+  scale_fill_manual(values = c("#E74C3C", "#3498DB"))
+```
+
 
 ### Sequencing depth vs. Shannon
 ```{r a3-depth-shannon}
@@ -1187,7 +1208,7 @@ bind_rows(
 ) %>%
   distinct() %>%
   mutate(direction = ifelse(log2_fc > 0, "Europe-enriched", "China-enriched")) %>%
-  ggplot(aes(x = reorder(Species, -q_value), y = log2_fc, fill = direction)) +
+  ggplot(aes(x = reorder(Species, log2_fc), y = log2_fc, fill = direction)) +
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c(
@@ -1229,15 +1250,15 @@ we_europe_enriched
 
 ```{r}
 plot_volcano(clr_we,
-             x_label   = "CLR estimate (West vs China, diabetics)",
-             title     = "CLR volcano — diabetics: West vs. China",
+             x_label   = "CLR estimate (Europe vs China, diabetics)",
+             title     = "CLR volcano — diabetics: Europe vs. China",
              pos_label = "West-enriched",
              neg_label = "China-enriched")
 
 plot_top_taxa(clr_we,
-              x_label   = "CLR estimate (West vs China, diabetics)",
-              title     = "Top differentially abundant taxa — East vs. West (diabetics)",
-              pos_label = "West-enriched",
+              x_label   = "CLR estimate (Europe vs China, diabetics)",
+              title     = "Top differentially abundant taxa — Europe vs. China (diabetics)",
+              pos_label = "Europe-enriched",
               neg_label = "China-enriched",
               pos_color = "#3498DB",
               neg_color = "#E74C3C")

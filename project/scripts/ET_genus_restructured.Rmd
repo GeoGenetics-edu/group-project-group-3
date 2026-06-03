@@ -1,6 +1,11 @@
 ---
-title: "Gut Microbiome Analysis: Diabetes and Geography"
-output: html_document
+title: "Genus, diabetes data set"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+        collapsed: false
+        smooth_scroll: true
 ---
 
 # Overview
@@ -273,7 +278,7 @@ plot_top_taxa <- function(clr_res, n = 10, x_label, title,
   ) %>%
     distinct() %>%
     mutate(direction = ifelse(estimate > 0, pos_label, neg_label)) %>%
-    ggplot(aes(x = reorder(Genus, -q_value), y = estimate, fill = direction)) +
+    ggplot(aes(x = reorder(Genus, estimate), y = estimate, fill = direction)) +
       geom_col() +
       coord_flip() +
       scale_fill_manual(values = c(setNames(pos_color, pos_label),
@@ -532,9 +537,24 @@ run_pairwise_wilcoxon(alpha_global, "Shannon", c("Disease.MESH.ID","Country"))
 
 
 ```
+```{r}
+ggplot(alpha_global, aes(x = Country, y = Shannon)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2) +
+  theme_bw()
+
+ggplot(alpha_global, aes(x = Disease.MESH.ID, y = Shannon)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2) +
+  theme_bw()
+```
+
 
 ### Sequencing depth vs. Shannon
 Negative correlation might be due to the removal of singletons.
+
+
+
 ```{r a1-depth-shannon}
 alpha_global$reads <- sample_sums(ps_global)[alpha_global$sample_id]
 
@@ -676,7 +696,7 @@ plot_rda_biplot(
   color_var    = "Disease.MESH.ID",
   shape_var    = "Country",
   color_values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
-  shape_values = c("China" = 16, "West" = 17),
+  shape_values = c("China" = 16, "Europe" = 17),
   title        = "RDA biplot — global: disease status and country"
 )
 ```
@@ -709,7 +729,7 @@ plot_rda_clr_comparison(
 ```{r a1-rda-clr-table}
 comp_global %>%
   arrange(desc(abs(rda1_loading))) %>%
-  select(Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  select(Phylum.x, Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
   head(20)
 ```
 
@@ -745,6 +765,15 @@ plot_richness(ps_china, measures = "Shannon", color = "Disease.MESH.ID") +
 run_kruskal(alpha_china, "Shannon", "Disease.MESH.ID")
 run_pairwise_wilcoxon(alpha_china, "Shannon", "Disease.MESH.ID")
 ```
+```{r}
+ggplot(alpha_china, aes(x = Disease.MESH.ID, y = Shannon, fill = Disease.MESH.ID)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  theme_bw() +
+  scale_fill_manual(values = c("#E74C3C", "#3498DB"))
+```
+
+
 
 ### Sequencing depth vs. Shannon
 ```{r a2-depth-shannon}
@@ -878,7 +907,7 @@ bind_rows(
 ) %>%
   distinct() %>%
   mutate(direction = ifelse(log2_fc > 0, "Diabetic-enriched", "Healthy-enriched")) %>%
-  ggplot(aes(x = reorder(Genus, -q_value), y = log2_fc, fill = direction)) +
+  ggplot(aes(x = reorder(Genus, log2_fc), y = log2_fc, fill = direction)) +
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c(
@@ -1049,13 +1078,23 @@ plot_bar(we_genus_sampled, fill = "Genus") +
 alpha_we <- make_alpha_df(ps_we, we_t$pa)
 
 plot_richness(ps_we, measures = "Shannon", color = "Country") +
-  scale_color_manual(values = c("China" = "#E74C3C", "West" = "#3498DB")) +
+  scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
   labs(title = "Shannon diversity — diabetics by geography") +
   theme_bw()
 
 run_kruskal(alpha_we, "Shannon", "Country")
 run_pairwise_wilcoxon(alpha_we, "Shannon", "Country")
 ```
+
+```{r}
+ggplot(alpha_we, aes(x = Country, y = Shannon, fill = Country)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  theme_bw() +
+  scale_fill_manual(values = c("#E74C3C", "#3498DB"))
+```
+
+
 
 ### Sequencing depth vs. Shannon
 ```{r a3-depth-shannon}
@@ -1187,7 +1226,7 @@ bind_rows(
 ) %>%
   distinct() %>%
   mutate(direction = ifelse(log2_fc > 0, "Europe-enriched", "China-enriched")) %>%
-  ggplot(aes(x = reorder(Genus, -q_value), y = log2_fc, fill = direction)) +
+  ggplot(aes(x = reorder(Genus, log2_fc), y = log2_fc, fill = direction)) +
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c(
@@ -1229,15 +1268,15 @@ we_europe_enriched
 
 ```{r}
 plot_volcano(clr_we,
-             x_label   = "CLR estimate (West vs China, diabetics)",
-             title     = "CLR volcano — diabetics: West vs. China",
+             x_label   = "CLR estimate (Europe vs China, diabetics)",
+             title     = "CLR volcano — diabetics: Europe vs. China",
              pos_label = "West-enriched",
              neg_label = "China-enriched")
 
 plot_top_taxa(clr_we,
-              x_label   = "CLR estimate (West vs China, diabetics)",
-              title     = "Top differentially abundant taxa — East vs. West (diabetics)",
-              pos_label = "West-enriched",
+              x_label   = "CLR estimate (Europe vs China, diabetics)",
+              title     = "Top differentially abundant taxa — China vs. Europe (diabetics)",
+              pos_label = "Europe-enriched",
               neg_label = "China-enriched",
               pos_color = "#3498DB",
               neg_color = "#E74C3C")
@@ -1272,7 +1311,7 @@ plot_wilcox_clr_comparison(
   clr_res        = clr_we,
   wilcox_x_label = "Wilcoxon log2 fold change (Europe vs China, diabetics)",
   clr_y_label    = "CLR estimate (Europe vs China, diabetics)",
-  title          = "Effect size agreement: Wilcoxon vs CLR — East vs. West"
+  title          = "Effect size agreement: Wilcoxon vs CLR — China vs. Europe"
 )
 ```
 
@@ -1292,7 +1331,7 @@ as.data.frame(pca_we$x[, 1:2]) %>%
     scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
     labs(x = paste0("PC1 (", pca_var[1], "%)"),
          y = paste0("PC2 (", pca_var[2], "%)"),
-         title = "PCA of CLR profiles — diabetics: East vs. West") +
+         title = "PCA of CLR profiles — diabetics: China vs. Europe") +
     theme_bw()
 ```
 
@@ -1351,6 +1390,6 @@ plot_rda_clr_comparison(
 ```{r a3-rda-clr-table}
 comp_we %>%
   arrange((abs(clr_q))) %>%
-  select(taxon, Phylum, Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  select(taxon, Phylum.x, Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
   head(30)
 ```
