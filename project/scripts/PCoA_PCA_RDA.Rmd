@@ -33,7 +33,7 @@ library(Maaslin2)
 # Data Loading
 ```{r load-data, include=FALSE}
 set.seed(42)
-Diabetes_path <- "../data/D003924_phyloseq_updated_species.RData"
+Diabetes_path <- "../data/D003924_phyloseq_updated_genus.RData"
 ps <- get(load(Diabetes_path))
 ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
 ps_pa  <- transform_sample_counts(ps, function(x) ifelse(x > 0, 1, 0))
@@ -112,7 +112,7 @@ ps_clr <- microbiome::transform(
 ps_t2d        <- subset_samples(ps_clean, Disease == "T2D")
 ps_t2d_female <- subset_samples(ps_t2d, Sex == "Female")
 ps_clr_female <- microbiome::transform(
-  transform_sample_counts(ps_t2d_female, function(x) x + 1),  # add pseudocount first
+  transform_sample_counts(ps_t2d_female, function(x) x + 0.000000001),  # add pseudocount first
   transform = "clr"
 )
 bray_dist_t2d    <- distance(ps_t2d_female, method = "bray")
@@ -222,7 +222,7 @@ cor.test(alpha_div$Shannon, alpha_div$Host.age, method = "spearman")
 ord_bray <- ordinate(ps_t2d_female, method = "PCoA", distance = bray_dist_t2d)
 
 plot_ordination(ps_t2d_female, ord_bray, type = "samples",
-                color = "Continent", shape = "Sex") +
+                color = "Continent") +
   geom_point(size = 3) +
   theme_bw()
 ```
@@ -272,7 +272,7 @@ meta_rda <- sample_data(rda_data) %>%
   )
 
 # 3. RDA
-rda_result <- rda(otu_clr ~ Continent + Host.age + Nr..reads.sequenced,
+rda_result <- rda(otu_clr ~ Continent + Nr..reads.sequenced,
                   data = meta_rda)
 
 # 4. Variance explained
@@ -310,7 +310,7 @@ species_scores <- scores(rda_result, display = "species") %>%
   as.data.frame() %>%
   rownames_to_column("taxon") %>%
   left_join(tax_df, by = "taxon") %>%
-  mutate(label = Species)
+  mutate(label = Genus)
 
 top_species <- species_scores %>%
   mutate(importance = sqrt(RDA1^2 + RDA2^2)) %>%
@@ -363,8 +363,8 @@ sample_df <- sample_data(ps_t2d_female) %>% data.frame()
 
 ```{r permanova-bray}
 adonis_res <- adonis2(
-  bray_dist_t2d ~ Continent + Host.age + Nr..reads.sequenced,
-  data = sample_df,
+  bray_dist_t2d ~ Continent  + Nr..reads.sequenced,
+  data = sample_df, by = "term",
   permutations = 999
 )
 
@@ -441,7 +441,7 @@ plot_ordination(
   )
 ```
 ```{r build-clr-long}
-rank_depth <- "Species"
+rank_depth <- "Genus"
 
 # CLR matrix from already-computed phyloseq object
 otu_clr_lm <- as.data.frame(otu_table(ps_clr_female))
@@ -465,14 +465,14 @@ clr_long <- otu_clr_lm %>%
 
 # Differential Abundance
 ```{r continent-differential, fig.width=10, fig.height=8}
-effect_threshold <- 0.005
+effect_threshold <- 1
 
 lm_results <- clr_long %>%
   group_by(across(all_of(rank_depth))) %>%
   do(
     tidy(
       lm(
-        clr ~ Continent + Host.age + Nr..reads.sequenced,
+        clr ~ Continent  + Nr..reads.sequenced,
         data = .
       )
     )
@@ -613,7 +613,7 @@ fit_data <- Maaslin2(
   input_data      = feature_df,
   input_metadata  = meta_df,
   output          = output_dir,
-  fixed_effects   = c("Continent", "Host.age", "Nr..reads.sequenced"),
+  fixed_effects   = c("Continent", "Nr..reads.sequenced"),
   normalization   = "NONE",
   transform       = "NONE",
   analysis_method = "LM",
@@ -694,17 +694,36 @@ ggplot(
 
 ```{r significant-tax-tree}
 sig_taxa <- lm_results %>%
-  filter(significant) %>%
-  pull(Species) %>%
+  filter(significant_practical) %>%
+  pull(.data[[rank_depth]]) %>%
+  unique()
+
+
+
+tax_table(rda_data) %>%
+  as.data.frame() %>%
+  rownames_to_column("taxon") %>%
+  mutate(across(-taxon, ~str_remove(., "^[a-z]__"))) %>%
+  filter(.data[[rank_depth]] %in% sig_taxa) %>%
+  select(Domain, Phylum, Class, Order, Family, Genus) %>%
+  distinct() %>%
+  arrange(Phylum, Class, Order, Family, Genus) %>%
+  knitr::kable(caption = "Taxonomic tree of significant taxa")
+```
+
+```{r maaslin2-tax-tree}
+sig_taxa_mas <- maaslin_results %>%
+  filter(significant, !is.na(.data[[rank_depth]])) %>%
+  pull(.data[[rank_depth]]) %>%
   unique()
 
 tax_table(rda_data) %>%
   as.data.frame() %>%
   rownames_to_column("taxon") %>%
   mutate(across(-taxon, ~str_remove(., "^[a-z]__"))) %>%
-  filter(Species %in% sig_taxa) %>%
-  select(Domain, Phylum, Class, Order, Family, Genus, Species) %>%
+  filter(.data[[rank_depth]] %in% sig_taxa_mas) %>%
+  select(Domain, Phylum, Class, Order, Family, Genus) %>%
   distinct() %>%
   arrange(Phylum, Class, Order, Family, Genus) %>%
-  knitr::kable(caption = "Taxonomic tree of significant taxa")
+  knitr::kable(caption = "Taxonomic tree of significant taxa (MaAsLin2)")
 ```
