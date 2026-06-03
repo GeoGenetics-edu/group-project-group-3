@@ -250,7 +250,7 @@ plot_ordination(ps_t2d_female, ord_nmds, type = "samples",
 ```
 
 ## RDA
-```{r rda-plot, fig.width=9, fig.height=6}
+```{r rda-plot, fig.width=9, fig.height=8}
 # ── Change dataset here ──────────────────────────────────────────────
 rda_data <- ps_t2d_female
 # ────────────────────────────────────────────────────────────────────
@@ -370,6 +370,7 @@ adonis_res <- adonis2(
 
 adonis_res
 ```
+
 
 ```{r dispersion-test}
 dispersion_bray <- betadisper(
@@ -726,4 +727,107 @@ tax_table(rda_data) %>%
   distinct() %>%
   arrange(Phylum, Class, Order, Family, Genus) %>%
   knitr::kable(caption = "Taxonomic tree of significant taxa (MaAsLin2)")
+```
+
+```{r rda-lm-correlation, fig.width=8, fig.height=6}
+# RDA1 taxon scores (sign-corrected so positive = Europe side)
+rda_site_scores_raw <- scores(rda_result, display = "sites")
+rda1_sign <- ifelse(
+  mean(rda_site_scores_raw[sample_data(rda_data)$Continent == "Europe", "RDA1"], na.rm = TRUE) >=
+    mean(rda_site_scores_raw[sample_data(rda_data)$Continent == "Asia",   "RDA1"], na.rm = TRUE),
+  1, -1
+)
+
+rda_taxa <- scores(rda_result, display = "species")[, "RDA1"] * rda1_sign
+rda_taxa_df <- tibble(
+  taxon       = names(rda_taxa),
+  rda1_loading = rda_taxa
+) %>%
+  left_join(tax_df %>% select(taxon, Genus), by = "taxon") %>%
+  group_by(Genus) %>%
+  summarise(rda1_loading = mean(rda1_loading), .groups = "drop") %>%
+  filter(!is.na(Genus))
+
+# Join with LM estimates
+correlation_df <- lm_results %>%
+  rename(Genus = .data[[rank_depth]]) %>%
+  select(Genus, estimate, significant, p_adj) %>%
+  inner_join(rda_taxa_df, by = "Genus") %>%
+  filter(!is.na(Genus)) %>%
+  mutate(
+    lm_result = case_when(
+      significant & sign(estimate) == sign(rda1_loading) ~ "LM significant, same direction",
+      significant                                         ~ "LM significant, opposite direction",
+      TRUE                                                ~ "LM not significant"
+    )
+  )
+
+
+
+ggplot(correlation_df,
+       aes(x = estimate, y = rda1_loading, color = lm_result)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey40") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_text(
+    data = correlation_df %>% filter(significant),
+    aes(label = Genus),
+    size = 2.5, hjust = -0.1
+  ) +
+  scale_color_manual(values = c(
+    "LM significant, same direction"     = "#2E8B57",
+    "LM significant, opposite direction" = "#E67E22",
+    "LM not significant"                 = "grey70"
+  )) +
+  labs(
+    title = "RDA1 loading vs LM continent coefficient",
+    x = "LM estimate (Europe - Asia, CLR scale)",
+    y = "RDA1 loading (positive = Europe side)",
+    color = NULL
+  ) +
+  theme_bw()
+```
+
+```{r rda-maaslin-correlation, fig.width=8, fig.height=6}
+correlation_df_mas <- maaslin_results %>%
+  rename(Genus = .data[[rank_depth]]) %>%
+  select(Genus, coef, significant, qval) %>%
+  inner_join(rda_taxa_df, by = "Genus") %>%
+  filter(!is.na(Genus)) %>%
+  mutate(
+    mas_result = case_when(
+      significant & sign(coef) == sign(rda1_loading) ~ "MaAsLin2 significant, same direction",
+      significant                                      ~ "MaAsLin2 significant, opposite direction",
+      TRUE                                             ~ "MaAsLin2 not significant"
+    )
+  )
+
+cor_test_mas <- cor.test(
+  correlation_df_mas$coef,
+  correlation_df_mas$rda1_loading,
+  method = "spearman"
+)
+
+ggplot(correlation_df_mas,
+       aes(x = coef, y = rda1_loading, color = mas_result)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey40") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_text(
+    data = correlation_df_mas %>% filter(significant),
+    aes(label = Genus),
+    size = 2.5, hjust = -0.1
+  ) +
+  scale_color_manual(values = c(
+    "MaAsLin2 significant, same direction"     = "#2E8B57",
+    "MaAsLin2 significant, opposite direction" = "#E67E22",
+    "MaAsLin2 not significant"                 = "grey70"
+  )) +
+  labs(
+    title = "RDA1 loading vs MaAsLin2 continent coefficient",
+    x = "MaAsLin2 coefficient (Europe - Asia, CLR scale)",
+    y = "RDA1 loading (positive = Europe side)",
+    color = NULL
+  ) +
+  theme_bw()
 ```
