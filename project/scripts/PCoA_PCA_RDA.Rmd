@@ -465,7 +465,7 @@ clr_long <- otu_clr_lm %>%
 
 # Differential Abundance
 ```{r continent-differential, fig.width=10, fig.height=8}
-effect_threshold <- 0.01
+effect_threshold <- 0.005
 
 lm_results <- clr_long %>%
   group_by(across(all_of(rank_depth))) %>%
