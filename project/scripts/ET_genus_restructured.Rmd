@@ -801,19 +801,6 @@ jaccard_dist <- distance(
 )
 ```
 
-### PCoA — Bray-Curtis
-```{r a2-pcoa, fig.width=8, fig.height=5}
-bray_china <- distance(china_t$rel, method = "bray")
-ord_china  <- ordinate(china_t$rel, method = "PCoA", distance = bray_china)
-
-plot_ordination(china_t$rel, ord_china, type = "samples",
-                color = "Disease.MESH.ID") +
-  scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
-                     labels = c("Diabetic", "Healthy")) +
-  labs(title = "PCoA (Bray-Curtis) — China",
-       color = "Status") +
-  theme_bw()
-```
 
 ### NMDS based on Bray-Curtis distance
 
@@ -846,6 +833,25 @@ disp_china <- betadisper(bray_china, sample_df_china$Disease.MESH.ID)
 anova(disp_china)
 plot(disp_china, main = "Dispersion — China by disease status")
 ```
+
+### PCoA — Bray-Curtis
+```{r a2-pcoa, fig.width=8, fig.height=5}
+bray_china <- distance(china_t$rel, method = "bray")
+ord_china  <- ordinate(china_t$rel, method = "PCoA", distance = bray_china)
+
+plot_ordination(china_t$rel, ord_china, type = "samples",
+                color = "Disease.MESH.ID") +
+  stat_ellipse(aes(color = Disease.MESH.ID), 
+               type = "norm",    # or "t" for robust ellipses
+               level = 0.95) +   # 95% confidence ellipse
+  scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
+                     labels = c("Diabetic", "Healthy")) +
+  labs(title = "PCoA (Bray-Curtis) — China",
+       color = "Status") +
+  theme_bw()
+
+```
+
 
 ## Wilcoxon Rank-Sum Test
 
