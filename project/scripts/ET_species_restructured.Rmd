@@ -1249,6 +1249,8 @@ clr_we <- run_clr_lm(
   term_filter = "countryEurope"
 )
 
+otu_table(we_t$clr)
+
 we_china_enriched <- clr_we %>%
   select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
