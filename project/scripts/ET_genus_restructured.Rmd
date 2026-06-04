@@ -311,21 +311,17 @@ run_rda <- function(ps_clr, formula_str, covariates) {
   meta_clr <- as(sample_data(ps_clr), "matrix") %>% as.data.frame() %>%
   mutate(
         across(c(Host.age, BMI, Nr..reads.sequenced), as.numeric),
-        # Explicitly set factor levels to match run_clr_lm
+        across(c(Host.age, BMI, Nr..reads.sequenced), ~ scale(.x)[, 1]),
         Sex             = factor(Sex,             levels = c("Female", "Male")),
         Disease.MESH.ID = factor(Disease.MESH.ID, levels = c("D006262", "D003924")),
         Country         = factor(Country,         levels = c("China", "Europe", "United States of America"))
       )
-
   na_idx       <- apply(meta_clr[, covariates, drop = FALSE], 1, anyNA)
   clr_clean    <- otu_clr[!na_idx, ]
   meta_clean   <- meta_clr[!na_idx, ]
-
   cat("Samples removed due to NAs:", sum(na_idx), "\n")
   cat("Samples retained:", nrow(clr_clean), "\n")
-
   rda_fit <- rda(as.formula(paste("clr_clean ~", formula_str)), data = meta_clean)
-
   list(rda = rda_fit, clr_mat = clr_clean, meta = meta_clean)
 }
 
@@ -407,12 +403,16 @@ plot_rda_biplot <- function(rda_obj, meta_df,
     labs(x = paste0("RDA1 (", pct1, "% of total variance)"),
          y = paste0("RDA2 (", pct2, "% of total variance)"),
          title = title) +
-    theme_bw()
+  theme_bw() +
+  theme(aspect.ratio = 1) +
+  coord_fixed()
 
   if (!is.null(shape_var) && !is.null(shape_values)) {
     p <- p + scale_shape_manual(values = shape_values)
   }
   p
+  
+
 }
 # Join RDA taxon loadings with CLR univariate estimates and flag agreement
 compare_rda_clr <- function(rda_obj, clr_res, tax_df, rda1_sign = 1) {
@@ -842,6 +842,9 @@ plot_ordination(
 
 ### PERMANOVA + Dispersion
 ```{r a2-permanova}
+bray_china <- distance(china_t$rel, method = "bray")
+ord_china  <- ordinate(china_t$rel, method = "PCoA", distance = bray_china)
+
 sample_df_china <- sample_data(china_t$rel) %>% data.frame()
 
 adonis2(bray_china ~ Disease.MESH.ID,
@@ -854,9 +857,6 @@ plot(disp_china, main = "Dispersion — China by disease status")
 
 ### PCoA — Bray-Curtis
 ```{r a2-pcoa, fig.width=8, fig.height=5}
-bray_china <- distance(china_t$rel, method = "bray")
-ord_china  <- ordinate(china_t$rel, method = "PCoA", distance = bray_china)
-
 plot_ordination(china_t$rel, ord_china, type = "samples",
                 color = "Disease.MESH.ID") +
   stat_ellipse(aes(color = Disease.MESH.ID), 
@@ -1034,7 +1034,7 @@ anova(rda_china_out$rda, permutations = 999)
 anova(rda_china_out$rda, by = "term", permutations = 999)
 ```
 
-```{r a2-rda-biplot, fig.width=9, fig.height=6}
+```{r a2-rda-biplot, fig.width=9, fig.height=8}
 plot_rda_biplot(
   rda_obj      = rda_china_out$rda,
   meta_df      = rda_china_out$meta,
