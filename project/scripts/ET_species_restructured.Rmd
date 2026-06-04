@@ -90,6 +90,21 @@ ps_china  <- subset_samples(ps, Country == "China")
 ps_we     <- subset_samples(ps, Disease.MESH.ID == "D003924" & Sex == "Female" &  Country %in% c("Europe", "China"))
 ```
 
+```{r}
+remove_zero_taxa <- function(ps) {
+  filter_taxa(ps, function(x) sum(x) > 0, prune = TRUE)
+}
+
+ps_global <- remove_zero_taxa(ps_global)
+ps_china  <- remove_zero_taxa(ps_china)
+ps_we     <- remove_zero_taxa(ps_we)
+
+cat("Taxa remaining after zero-removal:\n")
+cat("  ps_global:", ntaxa(ps_global), "\n")
+cat("  ps_china: ", ntaxa(ps_china),  "\n")
+cat("  ps_we:    ", ntaxa(ps_we),     "\n")
+```
+
 ## Transformed Phyloseq Objects
 ```{r transforms}
 make_transforms <- function(ps) {
