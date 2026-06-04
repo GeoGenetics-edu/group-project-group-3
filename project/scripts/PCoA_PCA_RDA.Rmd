@@ -277,7 +277,7 @@ meta_rda <- sample_data(rda_data) %>%
   )
 
 # 3. RDA
-rda_result <- rda(otu_clr ~ Continent + Nr..reads.sequenced,
+rda_result <- rda(otu_clr ~ Continent + Host.age + Nr..reads.sequenced,
                   data = meta_rda)
 
 # 4. Variance explained
@@ -368,7 +368,7 @@ sample_df <- sample_data(ps_t2d_female) %>% data.frame()
 
 ```{r permanova-bray}
 adonis_res <- adonis2(
-  bray_dist_t2d ~ Continent  + Nr..reads.sequenced,
+  bray_dist_t2d ~ Continent + Host.age + Nr..reads.sequenced,
   data = sample_df, by = "term",
   permutations = 999
 )
