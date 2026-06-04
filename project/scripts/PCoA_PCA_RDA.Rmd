@@ -26,7 +26,7 @@ library(lmerTest)
 library(broom.mixed)
 library(microbiome)
 library(biomformat)
-library(broom)
+# library(broom)
 library(Maaslin2)
 ```
 
@@ -108,9 +108,14 @@ ps_clr <- microbiome::transform(
   transform = "clr"
 )
 
+remove_zero_taxa <- function(ps) {
+  filter_taxa(ps, function(x) sum(x) > 0, prune = TRUE)
+}
+
 # Subsets
 ps_t2d        <- subset_samples(ps_clean, Disease == "T2D")
 ps_t2d_female <- subset_samples(ps_t2d, Sex == "Female")
+ps_t2d_female <- remove_zero_taxa(ps_t2d_female)
 ps_clr_female <- microbiome::transform(
   transform_sample_counts(ps_t2d_female, function(x) x + 0.000000001),  # add pseudocount first
   transform = "clr"
