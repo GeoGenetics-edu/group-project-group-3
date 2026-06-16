@@ -955,6 +955,13 @@ clr_china <- run_clr_lm(
   term_filter = "statusD003924"
 )
 
+clr_china_sig <- clr_china %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(estimate > 0, "Healthy-enriched", "Sick-enriched")) %>%
+  select(Genus, direction, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate)
+
+write.csv(clr_china_sig, "analysis2_significant_taxa.csv", row.names = FALSE)
 
 china_healthy_enriched <- clr_china %>%
   select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
@@ -1275,6 +1282,14 @@ clr_we <- run_clr_lm(
   formula_str = "clr ~ country + age + depth",
   term_filter = "countryEurope"
 )
+
+clr_we_sig <- clr_we %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(estimate > 0, "Europe-enriched", "China-enriched")) %>%
+  select(Genus, direction, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate)
+
+write.csv(clr_we_sig, "analysis3_significant_taxa.csv", row.names = FALSE)
 
 we_china_enriched <- clr_we %>%
   select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
