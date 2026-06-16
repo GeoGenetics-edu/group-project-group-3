@@ -1126,6 +1126,8 @@ comp3_china %>%
   select(Genus, wilcox_log2fc, glm_estimate, clr_estimate,
          wilcox_q, glm_q, clr_q, direction_agreement) %>%
   arrange(clr_q)
+
+plot_method_heatmap(comp3_china, "Healthy-enriched", "Sick-enriched", "Comparison between three methods, analysis A")
 ```
 
 ## Constrained Ordination — RDA
@@ -1382,6 +1384,57 @@ bind_rows(
     theme_bw()
 ```
 
+## GLM on relative abundance
+```{r}
+# 1. Run GLM on relative abundances for Analysis 3
+rel_we <- run_clr_lm(
+  ps_clr      = we_t$rel,
+  formula_str = "clr ~ country + age + depth",
+  term_filter = "countryEurope"
+)
+
+rel_we_sig <- rel_we %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(estimate > 0, "Healthy-enriched", "Sick-enriched")) %>%
+  select(Genus, direction, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate)
+
+write.csv(rel_we_sig, file = "a3_sig_genus_relative.csv")
+
+rel_we_china_enriched <- rel_we %>%
+  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate) %>%
+  head(10)
+
+rel_we_europe_enriched <- rel_we %>%
+  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(-estimate) %>%
+  head(10)
+
+rel_we_china_enriched
+rel_we_europe_enriched
+```
+
+### Plots
+```{r}
+plot_volcano(rel_we,
+             x_label   = "Relative abundance estimate (Europe vs China, diabetics)",
+             title     = "Relative abundance volcano — diabetics: Europe vs. China",
+             pos_label = "West-enriched",
+             neg_label = "China-enriched")
+
+plot_top_taxa(rel_we,
+              x_label   = "Relative abundance estimate (Europe vs China, diabetics)",
+              title     = "Top differentially abundant taxa — China vs. Europe (diabetics)",
+              pos_label = "Europe-enriched",
+              neg_label = "China-enriched",
+              pos_color = "#3498DB",
+              neg_color = "#E74C3C")
+```
+
+
+
+
 ## Compositional Analysis — CLR Linear Model (Constrained Ordination — RDA)
 
 The model adjusts for sex, age, BMI, and sequencing depth. The term of interest
@@ -1435,33 +1488,36 @@ plot_top_taxa(clr_we,
 ### Wilcoxon vs CLR Comparison
 
 ```{r a3-wilcox-clr, fig.width=8, fig.height=5}
-# Significant taxa summary
-tibble(
-  method        = c("Wilcoxon", "CLR"),
-  n_significant = c(
-    sum(wilcox_we$q_value < 0.05, na.rm = TRUE),
-    sum(clr_we$q_value    < 0.05, na.rm = TRUE)
-  )
+# 2. Join all three methods using the helper function
+comp3_we <- join_three_methods(
+  wilcox_res = wilcox_we,
+  glm_res    = rel_we,
+  clr_res    = clr_we
 )
 
-# Consensus taxa significant in both methods
-wilcox_we %>%
-  select(taxon, Genus, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
-  inner_join(
-    clr_we %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
-    by = "taxon"
-  ) %>%
-  filter(wilcox_q < 0.05, clr_q < 0.05) %>%
-  mutate(direction_agreement = sign(wilcox_log2fc) == sign(clr_estimate)) %>%
-  arrange(wilcox_q)
+# 3. Print out how many significant taxa each method identifies
+cat("Number of significant taxa detected by each method (Europe vs China among Diabetics):\n")
+print(summarise_n_sig(comp3_we))
 
-# Cross-method effect size scatter
-plot_wilcox_clr_comparison(
-  wilcox_res     = wilcox_we,
-  clr_res        = clr_we,
-  wilcox_x_label = "Wilcoxon log2 fold change (Europe vs China, diabetics)",
-  clr_y_label    = "CLR estimate (Europe vs China, diabetics)",
-  title          = "Effect size agreement: Wilcoxon vs CLR — China vs. Europe"
+# 4. Extract consensus taxa significant in all three models
+consensus_we <- comp3_we %>%
+  filter(sig_wilcox, sig_glm, sig_clr) %>%
+  mutate(direction_agreement =
+           sign(wilcox_log2fc) == sign(glm_estimate) &
+           sign(glm_estimate)  == sign(clr_estimate))
+
+cat("\nConsensus taxa significant in ALL 3 methods:\n")
+consensus_we %>%
+  select(Genus, wilcox_log2fc, glm_estimate, clr_estimate,
+         wilcox_q, glm_q, clr_q, direction_agreement) %>%
+  arrange(clr_q)
+
+# 5. Plot the signed -log10(q) heatmap
+plot_method_heatmap(
+  comp_df       = comp3_we, 
+  pos_direction = "Europe-enriched", 
+  neg_direction = "China-enriched", 
+  title         = "Method Agreement Heatmap — Diabetics: Europe vs. China"
 )
 ```
 
