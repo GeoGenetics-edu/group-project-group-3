@@ -464,34 +464,98 @@ run_wilcoxon <- function(ps_rel, group_var, pos_level, neg_level) {
 
 # Scatter plot: Wilcoxon log2FC vs CLR estimate, coloured by significance category
 # Follows the cross-method comparison in differential_abundance.Rmd
-plot_wilcox_clr_comparison <- function(wilcox_res, clr_res,
-                                       wilcox_x_label, clr_y_label, title) {
+join_three_methods <- function(wilcox_res, glm_res, clr_res) {
   wilcox_res %>%
-    select(taxon, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
+    select(taxon, Genus,
+           wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
+    left_join(
+      glm_res %>% select(taxon, glm_estimate = estimate, glm_q = q_value),
+      by = "taxon"
+    ) %>%
     left_join(
       clr_res %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
       by = "taxon"
     ) %>%
     mutate(
+      sig_wilcox = wilcox_q < 0.05,
+      sig_glm    = glm_q    < 0.05,
+      sig_clr    = clr_q    < 0.05,
       sig_category = case_when(
-        wilcox_q < 0.05 & clr_q < 0.05 ~ "Both significant",
-        wilcox_q < 0.05                 ~ "Wilcoxon only",
-        clr_q    < 0.05                 ~ "CLR only",
-        TRUE                            ~ "Not significant"
+        sig_wilcox & sig_glm & sig_clr ~ "All three",
+        sig_wilcox & sig_clr           ~ "Wilcoxon + CLR",
+        sig_wilcox & sig_glm           ~ "Wilcoxon + GLM",
+        sig_glm    & sig_clr           ~ "GLM + CLR",
+        sig_wilcox                     ~ "Wilcoxon only",
+        sig_glm                        ~ "GLM only",
+        sig_clr                        ~ "CLR only",
+        TRUE                           ~ "Not significant"
       )
+    )
+}
+
+# Signed -log10(q) heatmap across all three methods, for taxa significant in
+# at least one. Mirrors the heatmap from differential_abundance.Rmd.
+plot_method_heatmap <- function(comp_df, pos_direction, neg_direction, title) {
+  heatmap_data <- comp_df %>%
+    filter(sig_wilcox | sig_glm | sig_clr) %>%
+    select(Genus,
+           wilcox_log2fc, glm_estimate, clr_estimate,
+           wilcox_q, glm_q, clr_q) %>%
+    pivot_longer(
+      cols      = c(wilcox_q, glm_q, clr_q),
+      names_to  = "method", values_to = "q_value"
     ) %>%
-    ggplot(aes(x = wilcox_log2fc, y = clr_estimate, color = sig_category)) +
-      geom_point(alpha = 0.6, size = 2) +
-      scale_color_manual(values = c(
-        "Both significant" = "#E74C3C",
-        "Wilcoxon only"    = "#E67E22",
-        "CLR only"         = "#3498DB",
-        "Not significant"  = "grey70"
-      )) +
-      geom_hline(yintercept = 0, linetype = "dashed", color = "grey40") +
-      geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
-      labs(x = wilcox_x_label, y = clr_y_label, color = NULL, title = title) +
-      theme_bw()
+    mutate(
+      effect = case_when(
+        method == "wilcox_q" ~ wilcox_log2fc,
+        method == "glm_q"    ~ glm_estimate,
+        method == "clr_q"    ~ clr_estimate
+      ),
+      signed_neg_log10_q = sign(effect) * pmin(-log10(q_value), 10),
+      method = factor(method,
+                      levels = c("wilcox_q", "glm_q", "clr_q"),
+                      labels = c("Wilcoxon", "GLM (rel.)", "CLR"))
+    )
+
+  taxon_order <- heatmap_data %>%
+    group_by(Genus) %>%
+    summarise(mean_signed = mean(signed_neg_log10_q, na.rm = TRUE), .groups = "drop") %>%
+    arrange(mean_signed) %>%
+    pull(Genus)
+
+  heatmap_data %>%
+    mutate(Species = factor(Genus, levels = taxon_order)) %>%
+    ggplot(aes(x = method, y = Genus, fill = signed_neg_log10_q)) +
+      geom_tile(color = "white", linewidth = 0.5) +
+      geom_text(aes(label = ifelse(q_value < 0.05, "*", "")),
+                color = "black", size = 3) +
+      scale_fill_gradient2(
+        low      = "#3498DB", mid = "white", high = "#C0392B",
+        midpoint = 0, limits = c(-10, 10),
+        name     = "Signed\n-log10(q)",
+        breaks   = c(-10, -5, 0, 5, 10),
+        labels   = c(paste0("-10\n(", neg_direction, ")"), "-5",
+                     "0", "5",
+                     paste0("10\n(", pos_direction, ")"))
+      ) +
+      labs(x = "Method", y = NULL, title = title,
+           subtitle = paste0("Blue = ", neg_direction,
+                             ", Red = ", pos_direction,
+                             " | * = q < 0.05")) +
+      theme_bw() +
+      theme(axis.text.y = element_text(size = 7, face = "italic"))
+}
+
+# n_sig summary table across all three methods
+summarise_n_sig <- function(comp_df) {
+  tibble(
+    method        = c("Wilcoxon", "GLM (rel. abundance)", "CLR"),
+    n_significant = c(
+      sum(comp_df$wilcox_q < 0.05, na.rm = TRUE),
+      sum(comp_df$glm_q    < 0.05, na.rm = TRUE),
+      sum(comp_df$clr_q    < 0.05, na.rm = TRUE)
+    )
+  )
 }
 
 # Scatter plot: RDA1 loading vs CLR estimate, coloured by agreement
@@ -762,8 +826,12 @@ diabetics and non-diabetics?
 
 ### Barplot (relative abundance, n = 50 sample)
 ```{r a2-barplot, fig.width=10, fig.height=5}
-ps_genus_china  <- tax_glom(china_t$rel, taxrank = "Genus")
-china_genus_sampled <- sample_ps(ps_genus_china, size = min(50, nsamples(ps_genus_china)))
+ps_genus_china_sick  <- subset_samples(ps_genus_china, Disease.MESH.ID = "D003924")
+ps_genus_china_healthy  <- subset_samples(ps_genus_china, Disease.MESH.ID = "D006262")
+ps_genus_china_sick <- sample_ps(ps_genus_china_sick, size = min(15, nsamples(ps_genus_china_sick)))
+ps_genus_china_healthy <- sample_ps(ps_genus_china_healthy, size = min(15, nsamples(ps_genus_china_healthy)))
+
+china_genus_sampled <- merge_phyloseq(ps_genus_china_healthy, ps_genus_china_sick )
 
 plot_bar(china_genus_sampled, fill = "Genus") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
@@ -944,6 +1012,51 @@ bind_rows(
          title = "Top differentially abundant taxa (Wilcoxon) — China") +
     theme_bw()
 ```
+## GLM (with relative abundances)
+```{r}
+rel_china <- run_clr_lm(
+  ps_clr      = china_t$rel,
+  formula_str = "clr ~ sex + status + age + depth",
+  term_filter = "statusD003924"
+)
+
+rel_china_sig <- rel_china %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(estimate > 0, "Healthy-enriched", "Sick-enriched")) %>%
+  select(Genus, direction, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate)
+
+write.csv(rel_china_sig, file = "a2_sig_genus_relative.csv")
+
+rel_china_healthy_enriched <- rel_china %>%
+  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate) %>%
+  head(10)
+
+rel_china_sick_enriched <- rel_china %>%
+  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(-estimate) %>%
+  head(10)
+
+rel_china_healthy_enriched
+rel_china_sick_enriched
+```
+
+### Plots
+```{r plots}
+plot_volcano(rel_china,
+             x_label   = "Relative abundance estimate (diabetic vs healthy, China)",
+             title     = "Relative abundance volcano — China: diabetic vs healthy",
+             pos_label = "Diabetic-enriched",
+             neg_label = "Healthy-enriched")
+
+plot_top_taxa(rel_china,
+              x_label   = "Relative abundances estimate (diabetic vs healthy, China)",
+              title     = "Top differentially abundant taxa — China",
+              pos_label = "Diabetic-enriched",
+              neg_label = "Healthy-enriched")
+```
+
 
 ## Compositional Analysis — CLR Linear Model
 
@@ -992,37 +1105,27 @@ plot_top_taxa(clr_china,
               neg_label = "Healthy-enriched")
 ```
 
-### Wilcoxon vs CLR Comparison
+## Compare three methods
 
 ```{r a2-wilcox-clr, fig.width=8, fig.height=5}
-# Significant taxa summary
-tibble(
-  method        = c("Wilcoxon", "CLR"),
-  n_significant = c(
-    sum(wilcox_china$q_value < 0.05, na.rm = TRUE),
-    sum(clr_china$q_value    < 0.05, na.rm = TRUE)
-  )
+comp3_china <- join_three_methods(
+  wilcox_res = wilcox_china,
+  glm_res    = rel_china,
+  clr_res    = clr_china
 )
 
-# Consensus taxa significant in both methods
-wilcox_china %>%
-  select(taxon, Genus, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
-  inner_join(
-    clr_china %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
-    by = "taxon"
-  ) %>%
-  filter(wilcox_q < 0.05, clr_q < 0.05) %>%
-  mutate(direction_agreement = sign(wilcox_log2fc) == sign(clr_estimate)) %>%
-  arrange(wilcox_q)
+# How many taxa does each method detect?
+summarise_n_sig(comp3_china)
 
-# Cross-method effect size scatter
-plot_wilcox_clr_comparison(
-  wilcox_res    = wilcox_china,
-  clr_res       = clr_china,
-  wilcox_x_label = "Wilcoxon log2 fold change (diabetic vs healthy, China)",
-  clr_y_label    = "CLR estimate (diabetic vs healthy, China)",
-  title          = "Effect size agreement: Wilcoxon vs CLR — China"
-)
+# Consensus taxa significant in all three methods
+comp3_china %>%
+  filter(sig_wilcox, sig_glm, sig_clr) %>%
+  mutate(direction_agreement =
+           sign(wilcox_log2fc) == sign(glm_estimate) &
+           sign(glm_estimate)  == sign(clr_estimate)) %>%
+  select(Genus, wilcox_log2fc, glm_estimate, clr_estimate,
+         wilcox_q, glm_q, clr_q, direction_agreement) %>%
+  arrange(clr_q)
 ```
 
 ## Constrained Ordination — RDA
@@ -1094,6 +1197,14 @@ in gut microbiome composition between Western and Chinese (Eastern) populations?
 
 ### Barplot (relative abundance, n = 50 sample)
 ```{r a3-barplot, fig.width=10, fig.height=5}
+ps_genus_europe  <- subset_samples(ps_genus_china, Country = "Europe")
+ps_genus_asia  <- subset_samples(ps_genus_china, Country = "China")
+ps_genus_europe <- sample_ps(ps_genus_europe, size = min(15, nsamples(ps_genus_europe)))
+ps_genus_asia <- sample_ps(ps_genus_asia, size = min(15, nsamples(ps_genus_asia)))
+
+we_genus_sampled <- merge_phyloseq(ps_genus_asia, ps_genus_europe )
+
+
 ps_genus_we  <- tax_glom(we_t$rel, taxrank = "Genus")
 we_genus_sampled <- sample_ps(ps_genus_we, size = min(50, nsamples(ps_genus_we)))
 
