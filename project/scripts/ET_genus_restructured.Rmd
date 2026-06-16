@@ -48,6 +48,46 @@ tax  <- as(tax_table(ps),   "matrix") %>% as.data.frame()
 tree <- phy_tree(ps)
 ```
 
+## Sequencing depth
+```{r}
+# Extract metadata safely into a standard data frame
+depth_df <- as(sample_data(ps), "matrix") %>% as.data.frame()
+
+# Ensure the column is treated as a numeric value for plotting
+depth_df$Nr..reads.sequenced <- as.numeric(depth_df$Nr..reads.sequenced)
+
+# Plot boxplot of sequencing depth per country
+ggplot(depth_df, aes(x = Country, y = Nr..reads.sequenced, fill = Country)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+  geom_jitter(width = 0.2, alpha = 0.5, size = 1.5) +
+  labs(
+    x = "Country",
+    y = "Number of Reads Sequenced",
+    title = "Sequencing Depth Distribution per Country"
+  ) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+# Extract metadata safely into a standard data frame
+depth_df <- as(sample_data(ps), "matrix") %>% as.data.frame()
+depth_df$Nr..reads.sequenced <- as.numeric(depth_df$Nr..reads.sequenced)
+
+# Plot histograms faceted by country
+ggplot(depth_df, aes(x = Nr..reads.sequenced, fill = Country)) +
+  geom_histogram(bins = 30, color = "white", alpha = 0.8) +
+  facet_wrap(~ Country, scales = "free_y") + 
+  labs(
+    x = "Number of Reads Sequenced",
+    y = "Number of Samples",
+    title = "Sequencing Depth Profile by Country"
+  ) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+# Example using your Analysis 3 subset framework (Europe vs China)
+kruskal.test(Nr..reads.sequenced ~ Country, data = depth_df)
+```
+
 ## Data Overview
 ```{r data-overview}
 table(meta$Sex,                    useNA = "always")
@@ -62,7 +102,11 @@ cat("NAs – BMI:",      sum(is.na(meta$BMI)),      "\n")
 
 # Confirm data are relative abundances (all values ≤ 1)
 cat("Values > 1 (should be 0 for rel. abundance):", sum(otu_table(ps) > 1), "\n")
+
+# All columns 
+mean(colSums(otu_table(ps)))
 ```
+
 
 
 ## Prepare Phyloseq Objects and Subsets
@@ -103,6 +147,19 @@ cat("Taxa remaining after zero-removal:\n")
 cat("  ps_global:", ntaxa(ps_global), "\n")
 cat("  ps_china: ", ntaxa(ps_china),  "\n")
 cat("  ps_we:    ", ntaxa(ps_we),     "\n")
+
+mean(colSums(otu_table(ps_china)))
+ps_sick <- subset_samples(ps_china, Disease.MESH.ID %in% c("D003924"))
+ps_healthy <- subset_samples(ps_china, Disease.MESH.ID %in% c("D006262"))
+mean(colSums(otu_table(ps_sick)))
+mean(colSums(otu_table(ps_healthy)))
+
+mean(colSums(otu_table(ps_we)))
+ps_we_europe <- subset_samples(ps_we, Country %in% c("Europe"))
+ps_we_china <- subset_samples(ps_we, Country %in% c("China"))
+mean(colSums(otu_table(ps_europe)))
+mean(colSums(otu_table(ps_china)))
+
 ```
 
 
@@ -558,6 +615,37 @@ summarise_n_sig <- function(comp_df) {
   )
 }
 
+# Plot wilcoxon clr comparison
+plot_wilcox_clr_comparison <- function(wilcox_res, clr_res,
+                                       wilcox_x_label, clr_y_label, title) {
+  wilcox_res %>%
+    select(taxon, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
+    left_join(
+      clr_res %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
+      by = "taxon"
+    ) %>%
+    mutate(
+      sig_category = case_when(
+        wilcox_q < 0.05 & clr_q < 0.05 ~ "Both significant",
+        wilcox_q < 0.05                 ~ "Wilcoxon only",
+        clr_q    < 0.05                 ~ "CLR only",
+        TRUE                            ~ "Not significant"
+      )
+    ) %>%
+    ggplot(aes(x = wilcox_log2fc, y = clr_estimate, color = sig_category)) +
+      geom_point(alpha = 0.6, size = 2) +
+      scale_color_manual(values = c(
+        "Both significant" = "#E74C3C",
+        "Wilcoxon only"    = "#E67E22",
+        "CLR only"         = "#3498DB",
+        "Not significant"  = "grey70"
+      )) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "grey40") +
+      geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+      labs(x = wilcox_x_label, y = clr_y_label, color = NULL, title = title) +
+      theme_bw()
+}
+
 # Scatter plot: RDA1 loading vs CLR estimate, coloured by agreement
 plot_rda_clr_comparison <- function(comparison_df, x_label, y_label, title) {
   comparison_df %>%
@@ -676,6 +764,7 @@ plot_ordination(global_t$rel, ord_global, type = "samples",
   theme_bw()
 
 plot_scree(ord_global)
+
 ```
 ### NMDS based on Bray-Curtis distance
 
@@ -823,15 +912,15 @@ comp_global %>%
 diabetics and non-diabetics?
 
 ## Visualisation
-
 ### Barplot (relative abundance, n = 50 sample)
 ```{r a2-barplot, fig.width=10, fig.height=5}
+ps_genus_china  <- tax_glom(china_t$rel, taxrank = "Genus")
 ps_genus_china_sick  <- subset_samples(ps_genus_china, Disease.MESH.ID = "D003924")
 ps_genus_china_healthy  <- subset_samples(ps_genus_china, Disease.MESH.ID = "D006262")
-ps_genus_china_sick <- sample_ps(ps_genus_china_sick, size = min(15, nsamples(ps_genus_china_sick)))
-ps_genus_china_healthy <- sample_ps(ps_genus_china_healthy, size = min(15, nsamples(ps_genus_china_healthy)))
+ps_genus_china_sick_sampled <- sample_ps(ps_genus_china_sick, size = min(15, nsamples(ps_genus_china_sick)))
+ps_genus_china_healthy_sampled <- sample_ps(ps_genus_china_healthy, size = min(15, nsamples(ps_genus_china_healthy)))
 
-china_genus_sampled <- merge_phyloseq(ps_genus_china_healthy, ps_genus_china_sick )
+china_genus_sampled <- merge_phyloseq(ps_genus_china_healthy_sampled, ps_genus_china_sick_sampled )
 
 plot_bar(china_genus_sampled, fill = "Genus") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
@@ -848,11 +937,22 @@ plot_richness(ps_china, measures = "Shannon", color = "Disease.MESH.ID") +
   labs(title = "Shannon diversity — China") +
   theme_bw()
 
+plot_richness(china_t$pa, measures = "Observed", color = "Disease.MESH.ID") +
+  labs(title = "Observed richness — China") +
+  theme_bw()
+
 run_kruskal(alpha_china, "Shannon", "Disease.MESH.ID")
 run_pairwise_wilcoxon(alpha_china, "Shannon", "Disease.MESH.ID")
+
 ```
 ```{r}
 ggplot(alpha_china, aes(x = Disease.MESH.ID, y = Shannon, fill = Disease.MESH.ID)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  theme_bw() +
+  scale_fill_manual(values = c("#E74C3C", "#3498DB"))
+
+ggplot(alpha_china, aes(x = Disease.MESH.ID, y = Observed, fill = Disease.MESH.ID)) +
   geom_boxplot() +
   geom_jitter(width = 0.2, alpha = 0.5) +
   theme_bw() +
@@ -918,6 +1018,9 @@ sample_df_china <- sample_data(china_t$rel) %>% data.frame()
 adonis2(bray_china ~ Disease.MESH.ID,
         data = sample_df_china, permutations = 999)
 
+adonis2(bray_china ~ Nr..reads.sequenced,
+        data = sample_df_china, permutations = 999)
+
 disp_china <- betadisper(bray_china, sample_df_china$Disease.MESH.ID)
 anova(disp_china)
 plot(disp_china, main = "Dispersion — China by disease status")
@@ -938,6 +1041,33 @@ plot_ordination(china_t$rel, ord_china, type = "samples",
 
 ```
 
+### Jaccard
+```{r a2-permanova}
+jaccard_china <- distance(china_t$rel, method = "jaccard")
+ord_j_china  <- ordinate(china_t$rel, method = "PCoA", distance = jaccard_china)
+
+sample_df2_china <- sample_data(china_t$pa) %>% data.frame()
+
+adonis2(jaccard_china ~ Disease.MESH.ID,
+        data = sample_df2_china, permutations = 999)
+
+dispj_china <- betadisper(jaccard_china, sample_df_china$Disease.MESH.ID)
+anova(dispj_china)
+plot(dispj_china, main = "Dispersion — China by disease status")
+
+
+plot_ordination(china_t$rel, ord_j_china, type = "samples",
+                color = "Disease.MESH.ID") +
+  stat_ellipse(aes(color = Disease.MESH.ID), 
+               type = "norm",    # or "t" for robust ellipses
+               level = 0.95) +   # 95% confidence ellipse
+  scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
+                     labels = c("Diabetic", "Healthy")) +
+  labs(title = "PCoA (Jaccard) — China",
+       color = "Status") +
+  theme_bw()
+
+```
 
 ## Wilcoxon Rank-Sum Test
 
@@ -951,6 +1081,14 @@ wilcox_china <- run_wilcoxon(
   pos_level = "D003924",   # diabetic = numerator
   neg_level = "D006262"    # healthy  = denominator
 )
+
+wilcoxon_china_sig <- wilcox_china %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(log2_fc > 0, "Sick-enriched", "Healthy-enriched")) %>%
+  select(Genus, direction, log2_fc, p_value, q_value) %>%
+  arrange(log2_fc)
+
+write.csv(wilcoxon_china_sig, "analysisa_sig_genera_wilcox.csv")
 
 # Top diabetic-enriched (positive log2FC)
 wilcox_china %>%
@@ -1128,6 +1266,8 @@ comp3_china %>%
   arrange(clr_q)
 
 plot_method_heatmap(comp3_china, "Healthy-enriched", "Sick-enriched", "Comparison between three methods, analysis A")
+
+plot_wilcox_clr_comparison(wilcox_china, clr_china, "Wilcoxon log2 fold change", "CLR estimate", "Comparison between Wilcoxon and CLR for analysis A")
 ```
 
 ## Constrained Ordination — RDA
@@ -1226,6 +1366,12 @@ plot_richness(ps_we, measures = "Shannon", color = "Country") +
   labs(title = "Shannon diversity — diabetics by geography") +
   theme_bw()
 
+plot_richness(we_t$pa, measures = "Observed", color = "Country") +
+  scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
+  labs(title = "Shannon diversity — diabetics by geography") +
+  theme_bw()
+
+
 run_kruskal(alpha_we, "Shannon", "Country")
 run_pairwise_wilcoxon(alpha_we, "Shannon", "Country")
 ```
@@ -1273,8 +1419,24 @@ bray_we <- distance(we_t$rel, method = "bray")
 ord_we  <- ordinate(we_t$rel, method = "PCoA", distance = bray_we)
 
 plot_ordination(we_t$rel, ord_we, type = "samples", color = "Country") +
+    stat_ellipse(aes(color = Country), 
+               type = "norm",    # or "t" for robust ellipses
+               level = 0.95) +   # 95% confidence ellipse
   scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
   labs(title = "PCoA (Bray-Curtis) — diabetics: East vs. West") +
+  theme_bw()
+```
+
+```{r a3-pcoa, fig.width=8, fig.height=5}
+jaccard_we <- distance(we_t$pa, method = "jaccard")
+ordj_we  <- ordinate(we_t$pa, method = "PCoA", distance = jaccard_we)
+
+plot_ordination(we_t$pa, ordj_we, type = "samples", color = "Country") +
+    stat_ellipse(aes(color = Country), 
+               type = "norm",    # or "t" for robust ellipses
+               level = 0.95) +   # 95% confidence ellipse
+  scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
+  labs(title = "PCoA (Jaccard) — diabetics: East vs. West") +
   theme_bw()
 ```
 
@@ -1305,7 +1467,20 @@ sample_df_we <- sample_data(we_t$rel) %>% data.frame()
 adonis2(bray_we ~ Country,
         data = sample_df_we, permutations = 999)
 
+adonis2(bray_we ~ Nr..reads.sequenced,
+        data = sample_df_we, permutations = 999)
+
 disp_we <- betadisper(bray_we, sample_df_we$Country)
+anova(disp_we)
+plot(disp_we, main = "Dispersion — diabetics by geography")
+```
+```{r a3-permanova}
+sample_df2_we <- sample_data(we_t$pa) %>% data.frame()
+
+adonis2(jaccard_we ~ Country,
+        data = sample_df2_we, permutations = 999)
+
+disp_we <- betadisper(jaccard_we, sample_df2_we$Country)
 anova(disp_we)
 plot(disp_we, main = "Dispersion — diabetics by geography")
 ```
@@ -1322,6 +1497,14 @@ wilcox_we <- run_wilcoxon(
   pos_level = "Europe",   # Europe = numerator
   neg_level = "China"     # China  = denominator
 )
+
+wilcoxon_we_sig <- wilcox_we %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(log2_fc > 0, "Europe-enriched", "China-enriched")) %>%
+  select(Genus, direction, log2_fc, p_value, q_value) %>%
+  arrange(log2_fc)
+
+write.csv(wilcoxon_we_sig, "analysisb_sig_genera_wilcox.csv")
 
 # Top Europe-enriched (positive log2FC)
 wilcox_we %>%
@@ -1519,6 +1702,9 @@ plot_method_heatmap(
   neg_direction = "China-enriched", 
   title         = "Method Agreement Heatmap — Diabetics: Europe vs. China"
 )
+
+plot_wilcox_clr_comparison(wilcox_we, clr_we, "Wilcoxon log2 fold change", "CLR estimate", "Comparison between Wilcoxon and CLR for analysis B")
+
 ```
 
 ### PCA of CLR Profiles
