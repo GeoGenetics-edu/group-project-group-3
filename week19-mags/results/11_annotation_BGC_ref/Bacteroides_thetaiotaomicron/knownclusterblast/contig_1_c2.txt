@@ -1,0 +1,27 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+HFNEPP_02801	3621768	3622164	+	hypothetical protein	
+HFNEPP_02802	3622151	3622736	+	hypothetical protein	
+HFNEPP_02803	3622744	3623680	+	hypothetical protein	
+HFNEPP_02804	3623691	3624663	+	hypothetical protein	
+HFNEPP_02805	3624662	3625643	+	hypothetical protein	
+HFNEPP_02806	3625639	3626932	+	hypothetical protein	
+HFNEPP_02807	3626931	3628056	+	Glycosyl transferase family 1 domain-containing protein	
+HFNEPP_02808	3628108	3629230	+	Glycosyltransferase, group 1 family protein	
+HFNEPP_02809	3629177	3630353	+	Glycosyltransferase	
+HFNEPP_02810	3630373	3631396	+	hypothetical protein	
+HFNEPP_02811	3631343	3631673	+	PqqD family protein	
+HFNEPP_02812	3631744	3632875	+	Nucleotidyltransferase family protein	
+HFNEPP_02813	3632871	3633813	+	Phosphoenolpyruvate carboxykinase	
+HFNEPP_02814	3633851	3634637	+	Polysaccharide biosynthesis/export protein	
+HFNEPP_02815	3634652	3636992	+	hypothetical protein	
+HFNEPP_02816	3637042	3637201	+	hypothetical protein	
+HFNEPP_02817	3637253	3637454	+	hypothetical protein	
+HFNEPP_02818	3637480	3639649	+	Lipoprotein	
+
+
+Significant hits: 
+
+
+Details:

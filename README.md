@@ -1,13 +1,13 @@
 # NBIB25004U — Metagenomics Analyses for Microbiomes 2026
 
-## Group _N_
+## Group 3
 
 | Member | KU-ID |
 |--------|-------|
-| _Name_ | _abc123_ |
-| _Name_ | _abc123_ |
-| _Name_ | _abc123_ |
-| _Name_ | _abc123_ |
+| Asger | _bkg567_ |
+| Esin | _cxq772_ |
+| Michelle | _zqs981_ |
+| Mikkel | _xkz321_ |
 
 ## Links
 
@@ -49,7 +49,7 @@
 
 ```bash
 git clone git@github.com:geogenetics-edu/group-project-<your-team>.git
-cd group-project-<your-team>
+cd /maps/projects/course_1/scratch/group3/group-project-group-3
 ```
 
 ## Basic git workflow
@@ -62,3 +62,21 @@ git pull                  # Pull your teammates' changes
 ```
 
 Commit early and often. Write meaningful commit messages. Make sure all group members contribute commits.
+
+## Directories
+```bash
+# Group directory
+/projects/course_1/scratch/group3/group-project-group-3
+
+# logs for scripts
+/projects/course_1/scratch/group3/logs
+
+# for each person
+/projects/course_1/people/<KU-ID>
+```
+
+## Important script snippets
+```bash
+#SBATCH --output=/maps/projects/course_1/scratch/group3/logs/%x_%j.out
+#SBATCH --error=/maps/projects/course_1/scratch/group3/logs/%x_%j.err#!/bin/bash
+```

@@ -1,0 +1,17 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+GMFAEM_01870	1918971	1921083	-	UvrABC system protein B	
+GMFAEM_01871	1921101	1922337	-	Histidine kinase	
+GMFAEM_01872	1922326	1922992	-	Oxygen regulatory protein NreC	
+GMFAEM_01873	1923141	1923537	+	Lactococcin 972 family bacteriocin	
+GMFAEM_01874	1923631	1925602	+	ABC transporter permease	
+GMFAEM_01875	1925656	1926292	+	ABC transporter	
+GMFAEM_01876	1926286	1926904	-	Dephospho-CoA kinase	
+GMFAEM_01877	1927018	1928494	-	30S ribosomal protein S1	
+
+
+Significant hits: 
+
+
+Details:

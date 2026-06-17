@@ -1,0 +1,22 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+HFNEPP_04538	5688599	5689640	-	Sialic acid synthase	
+HFNEPP_04539	5689639	5690389	-	Acylneuraminate cytidylyltransferase	
+HFNEPP_04540	5690397	5691657	-	hypothetical protein	
+HFNEPP_04541	5691610	5693095	-	Polysaccharide biosynthesis protein C-terminal domain-containing protein	
+HFNEPP_04542	5693297	5693441	-	hypothetical protein	
+HFNEPP_04543	5693437	5694559	-	2-aminoethylphosphonate--pyruvate transaminase	
+HFNEPP_04544	5694568	5695693	-	3D-(3,5/4)-trihydroxycyclohexane-1,2-dione hydrolase	
+HFNEPP_04545	5695709	5697011	-	Fosfomycin biosynthesis bifunctional protein Fom1	
+HFNEPP_04546	5697031	5697751	-	hypothetical protein	
+HFNEPP_04547	5697814	5698963	-	Polysaccharide chain length determinant N-terminal domain-containing protein	
+HFNEPP_04548	5698973	5701343	-	Capsule biosynthesis protein	
+HFNEPP_04549	5701402	5701717	-	hypothetical protein	
+HFNEPP_04550	5701781	5702360	-	NusG-like N-terminal domain-containing protein	
+
+
+Significant hits: 
+
+
+Details:

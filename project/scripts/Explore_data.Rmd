@@ -1,0 +1,77 @@
+---
+title: "Test1"
+output: html_document
+date: "2026-05-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r}
+library(phyloseq)
+library(vegan)
+library(dplyr)
+library(tibble)
+library(purrr)
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(ggh4x)
+library(lme4)
+library(lmerTest)
+library(broom.mixed)
+library(microbiome)
+```
+
+```{r}
+sample_ps <- function(ps, FUN = sample, ...){
+  ids <- sample_names(ps)
+  sampled_ids <- FUN(ids, ...)
+  ps <- prune_samples(sampled_ids, ps)
+  return(ps)
+}
+```
+
+
+```{r}
+path <- "../data/D003924_Diabetes_Mellitus,_T/species/phyloseq.RData"
+
+ps <- get(load(path))
+sample_data(ps)
+```
+
+```{r}
+ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
+otu_rel <- as(otu_table(ps_rel), "matrix") %>% t() %>% as.data.frame()
+meta_rel <- as(sample_data(ps_rel), "matrix") %>% as.data.frame()
+tax_rel <- as(tax_table(ps_rel), "matrix") %>% as.data.frame()  
+
+ps_genus <- tax_glom(ps_rel, taxrank = "Genus")
+
+ps_genus_sampled <- sample_ps(ps_genus, FUN = sample, size = 80)
+
+plot_bar(ps_genus_sampled, fill = "Genus") +
+  facet_nested(~ Disease.MESH.ID, scales = "free_x") +
+  theme(axis.text.x = element_blank())
+
+ps_IBD_sick <- subset_samples(ps_genus, Sex %in% c('Male', 'Female'))
+ps_IBD_healthy <- subset_samples(ps_genus, Disease.MESH.ID %in% c('D006262'))
+
+```
+
+```{r}
+plot_tree(ps_genus_sampled)
+```
+
+```{r}
+plot_heatmap(ps_genus)
+```
+

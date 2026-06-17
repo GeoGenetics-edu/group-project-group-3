@@ -1,0 +1,82 @@
+---
+title: "First-draft"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(phyloseq)
+library(vegan)
+library(dplyr)
+library(tibble)
+library(purrr)
+library(stringr)
+library(ggplot2)
+library(tidyverse)
+library(ggh4x)
+library(lme4)
+library(lmerTest)
+library(broom.mixed)
+library(microbiome)
+```
+
+```{r}
+cat_data <- readRDS("../data/molecular_ecology_17695.rds")
+
+
+ps <- cat_data$phyloseq
+sample_data(ps)
+rank_names(ps)
+sample_variables(ps)
+
+ps_domestic <- subset_samples(ps, origin %in% c('Domestic'))
+ps_feral <- subset_samples(ps, origin %in% c('Feral'))
+``` 
+
+```{r}
+ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
+ps_pa <- transform_sample_counts(
+  ps,
+  function(x){ifelse(x > 0, 1, 0)}
+)
+
+sample_sums(ps_pa)
+```
+```{r calculate-bray-distance}
+bray_dist <- distance(
+  ps_rel,
+  method = "bray"
+)
+
+#bray_dist
+```
+```{r calculate-jaccard-distance}
+jaccard_dist <- distance(
+  ps_pa,
+  method = "jaccard"
+)
+
+#jaccard_dist
+```
+```{r pcoa-bray-basic, fig.width=8, fig.height=5}
+ord_bray <- ordinate(
+  ps_rel,
+  method = "PCoA",
+  distance = bray_dist
+)
+
+plot_ordination(
+  ps_rel,
+  ord_bray,
+  type = "origin",
+  color = "origin"
+)
+```
+```{r}
+plot_scree(ord_bray)
+```

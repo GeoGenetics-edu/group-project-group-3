@@ -1,0 +1,28 @@
+ClusterBlast scores for contig_1
+
+Table of genes, locations, strands and annotations of query cluster:
+HFNEPP_02317	3067280	3068318	+	putative dual-specificity RNA methyltransferase RlmN	
+HFNEPP_02318	3068335	3069373	+	DUF4837 domain-containing protein	
+HFNEPP_02319	3069377	3070472	+	4-hydroxythreonine-4-phosphate dehydrogenase	
+HFNEPP_02320	3070595	3071837	+	Sigma-54 dependent transcriptional regulator	
+HFNEPP_02321	3071823	3072351	+	LptE family protein	
+HFNEPP_02322	3072355	3073150	+	Tetratricopeptide repeat protein	
+HFNEPP_02323	3073156	3073552	+	hypothetical protein	
+HFNEPP_02324	3073842	3075231	+	Lysosomal dipeptide transporter MFSD1	
+HFNEPP_02325	3075275	3075623	+	PqqD family protein	
+HFNEPP_02326	3075612	3075900	-	hypothetical protein	
+HFNEPP_02327	3075921	3076986	-	DUF4831 domain-containing protein	
+HFNEPP_02328	3077059	3078571	-	Bifunctional NAD(P)H-hydrate repair enzyme	
+HFNEPP_02329	3079232	3079457	+	hypothetical protein	
+HFNEPP_02330	3079650	3081195	+	Di-tripeptide ABC transporter	
+HFNEPP_02331	3081236	3081773	+	Hypoxanthine phosphoribosyltransferase	
+HFNEPP_02332	3081806	3082376	+	Adenylate kinase	
+HFNEPP_02333	3082388	3083555	+	GTPase Obg	
+HFNEPP_02334	3083578	3084364	+	Purine nucleoside phosphorylase BT_4389	
+HFNEPP_02335	3084447	3085113	+	B3/B4 tRNA-binding domain-containing protein	
+
+
+Significant hits: 
+
+
+Details:
