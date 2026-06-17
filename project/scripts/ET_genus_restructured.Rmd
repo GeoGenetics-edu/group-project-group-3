@@ -157,8 +157,8 @@ mean(colSums(otu_table(ps_healthy)))
 mean(colSums(otu_table(ps_we)))
 ps_we_europe <- subset_samples(ps_we, Country %in% c("Europe"))
 ps_we_china <- subset_samples(ps_we, Country %in% c("China"))
-mean(colSums(otu_table(ps_europe)))
-mean(colSums(otu_table(ps_china)))
+mean(colSums(otu_table(ps_we_europe)))
+mean(colSums(otu_table(ps_we_china)))
 
 ```
 
@@ -587,7 +587,7 @@ plot_method_heatmap <- function(comp_df, pos_direction, neg_direction, title) {
       geom_text(aes(label = ifelse(q_value < 0.05, "*", "")),
                 color = "black", size = 3) +
       scale_fill_gradient2(
-        low      = "#3498DB", mid = "white", high = "#C0392B",
+        low      = "#C0392B", mid = "white", high = "#3498DB",
         midpoint = 0, limits = c(-10, 10),
         name     = "Signed\n-log10(q)",
         breaks   = c(-10, -5, 0, 5, 10),
@@ -1152,15 +1152,17 @@ bind_rows(
 ```
 ## GLM (with relative abundances)
 ```{r}
+china_logrel <- transform_sample_counts(china_t$rel, function(x) {x <- x + 1e-9; log(x)})
+                                        
 rel_china <- run_clr_lm(
-  ps_clr      = china_t$rel,
+  ps_clr      = china_logrel,
   formula_str = "clr ~ sex + status + age + depth",
   term_filter = "statusD003924"
 )
 
 rel_china_sig <- rel_china %>%
   filter(q_value < 0.05) %>%
-  mutate(direction = ifelse(estimate > 0, "Healthy-enriched", "Sick-enriched")) %>%
+  mutate(direction = ifelse(estimate > 0, "Sick-enriched", "Healthy-enriched")) %>%
   select(Genus, direction, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate)
 
@@ -1265,7 +1267,7 @@ comp3_china %>%
          wilcox_q, glm_q, clr_q, direction_agreement) %>%
   arrange(clr_q)
 
-plot_method_heatmap(comp3_china, "Healthy-enriched", "Sick-enriched", "Comparison between three methods, analysis A")
+plot_method_heatmap(comp3_china, "Sick-enriched", "Healthy-enriched", "Comparison between three methods, analysis A")
 
 plot_wilcox_clr_comparison(wilcox_china, clr_china, "Wilcoxon log2 fold change", "CLR estimate", "Comparison between Wilcoxon and CLR for analysis A")
 ```
@@ -1368,7 +1370,7 @@ plot_richness(ps_we, measures = "Shannon", color = "Country") +
 
 plot_richness(we_t$pa, measures = "Observed", color = "Country") +
   scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
-  labs(title = "Shannon diversity — diabetics by geography") +
+  labs(title = "Observed richness — diabetics by geography") +
   theme_bw()
 
 
@@ -1570,11 +1572,15 @@ bind_rows(
 ## GLM on relative abundance
 ```{r}
 # 1. Run GLM on relative abundances for Analysis 3
+we_logrel <- transform_sample_counts(we_t$rel, function(x) {x <- x + 1e-9; log(x)})
+
+
 rel_we <- run_clr_lm(
   ps_clr      = we_t$rel,
-  formula_str = "clr ~ country + age + depth",
+  formula_str = "clr ~ country + depth",
   term_filter = "countryEurope"
 )
+
 
 rel_we_sig <- rel_we %>%
   filter(q_value < 0.05) %>%
@@ -1626,7 +1632,7 @@ is `countryWest` (West relative to China).
 ```{r a3-clr}
 clr_we <- run_clr_lm(
   ps_clr      = we_t$clr,
-  formula_str = "clr ~ country + age + depth",
+  formula_str = "clr ~ country + depth",
   term_filter = "countryEurope"
 )
 

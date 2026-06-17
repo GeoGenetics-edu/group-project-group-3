@@ -39,13 +39,53 @@ library(broom.mixed)
 
 ## Load Data
 ```{r load-data}
-path <- "../data/D003924_phyloseq_updated.RData"
+path <- "../data/D003924_phyloseq_updated_species.RData"
 ps <- get(load(path))
 
 meta <- as(sample_data(ps), "matrix") %>% as.data.frame()
 otu  <- as(otu_table(ps),   "matrix") %>% as.data.frame()
 tax  <- as(tax_table(ps),   "matrix") %>% as.data.frame()
 tree <- phy_tree(ps)
+```
+
+## Sequencing depth
+```{r}
+# Extract metadata safely into a standard data frame
+depth_df <- as(sample_data(ps), "matrix") %>% as.data.frame()
+
+# Ensure the column is treated as a numeric value for plotting
+depth_df$Nr..reads.sequenced <- as.numeric(depth_df$Nr..reads.sequenced)
+
+# Plot boxplot of sequencing depth per country
+ggplot(depth_df, aes(x = Country, y = Nr..reads.sequenced, fill = Country)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+  geom_jitter(width = 0.2, alpha = 0.5, size = 1.5) +
+  labs(
+    x = "Country",
+    y = "Number of Reads Sequenced",
+    title = "Sequencing Depth Distribution per Country"
+  ) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+# Extract metadata safely into a standard data frame
+depth_df <- as(sample_data(ps), "matrix") %>% as.data.frame()
+depth_df$Nr..reads.sequenced <- as.numeric(depth_df$Nr..reads.sequenced)
+
+# Plot histograms faceted by country
+ggplot(depth_df, aes(x = Nr..reads.sequenced, fill = Country)) +
+  geom_histogram(bins = 30, color = "white", alpha = 0.8) +
+  facet_wrap(~ Country, scales = "free_y") + 
+  labs(
+    x = "Number of Reads Sequenced",
+    y = "Number of Samples",
+    title = "Sequencing Depth Profile by Country"
+  ) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+# Example using your Analysis 3 subset framework (Europe vs China)
+kruskal.test(Nr..reads.sequenced ~ Country, data = depth_df)
 ```
 
 ## Data Overview
@@ -62,7 +102,11 @@ cat("NAs – BMI:",      sum(is.na(meta$BMI)),      "\n")
 
 # Confirm data are relative abundances (all values ≤ 1)
 cat("Values > 1 (should be 0 for rel. abundance):", sum(otu_table(ps) > 1), "\n")
+
+# All columns 
+mean(colSums(otu_table(ps)))
 ```
+
 
 
 ## Prepare Phyloseq Objects and Subsets
@@ -103,7 +147,21 @@ cat("Taxa remaining after zero-removal:\n")
 cat("  ps_global:", ntaxa(ps_global), "\n")
 cat("  ps_china: ", ntaxa(ps_china),  "\n")
 cat("  ps_we:    ", ntaxa(ps_we),     "\n")
+
+mean(colSums(otu_table(ps_china)))
+ps_sick <- subset_samples(ps_china, Disease.MESH.ID %in% c("D003924"))
+ps_healthy <- subset_samples(ps_china, Disease.MESH.ID %in% c("D006262"))
+mean(colSums(otu_table(ps_sick)))
+mean(colSums(otu_table(ps_healthy)))
+
+mean(colSums(otu_table(ps_we)))
+ps_we_europe <- subset_samples(ps_we, Country %in% c("Europe"))
+ps_we_china <- subset_samples(ps_we, Country %in% c("China"))
+mean(colSums(otu_table(ps_we_europe)))
+mean(colSums(otu_table(ps_we_china)))
+
 ```
+
 
 ## Transformed Phyloseq Objects
 ```{r transforms}
@@ -126,7 +184,7 @@ ps_rel <- transform_sample_counts(ps, function(x) x / sum(x))
 otu_rel <- as(otu_table(ps_rel), "matrix") %>% t() %>% as.data.frame()
 meta_rel <- as(sample_data(ps_rel), "matrix") %>% as.data.frame()
 tax_rel <- as(tax_table(ps_rel), "matrix") %>% as.data.frame()  
-ps_genus <- tax_glom(ps_rel, taxrank = "Species")
+ps_species <- tax_glom(ps_rel, taxrank = "Species")
 
 dat_rel <- otu_rel %>%
   rownames_to_column("sample_id") %>%
@@ -159,6 +217,7 @@ dat_rel %>%
          title = "Zero-inflation: most taxa are absent from most samples") +
     theme_bw()
 ```
+
 ```{r}
 set.seed(42)
 example_taxa <- dat_rel %>%
@@ -171,7 +230,7 @@ example_taxa <- dat_rel %>%
 
 dat_rel %>%
   filter(Disease.MESH.ID == "D006262", taxon %in% example_taxa, rel_abund > 0) %>%
-  mutate(label = Species) %>%
+  mutate(label = ifelse(!is.na(Species) & Species != "", Species, Genus)) %>%
   ggplot(aes(x = rel_abund)) +
     geom_histogram(bins = 20, fill = "steelblue", color = "white") +
     facet_wrap(~ label, scales = "free") +
@@ -180,10 +239,11 @@ dat_rel %>%
          title = "Right-skewed distributions in gut taxa") +
     theme_bw()
 ```
+
 ```{r}
 dat_rel %>%
   filter(Disease.MESH.ID == "D006262", taxon %in% example_taxa) %>%
-  mutate(label = Species) %>%
+  mutate(label = ifelse(!is.na(Species) & Species != "", Species, Genus)) %>%
   ggplot(aes(sample = rel_abund)) +
     stat_qq(size = 0.8, alpha = 0.6) +
     stat_qq_line(color = "red", linetype = "dashed") +
@@ -253,7 +313,7 @@ run_clr_lm <- function(ps_clr, formula_str, term_filter) {
       bmi    = as.numeric(BMI),
       depth  = as.numeric(Nr..reads.sequenced)
     ) %>%
-    group_by(taxon, Genus, Species) %>%
+    group_by(taxon, Phylum, Genus, Species) %>%
     group_modify(~ broom::tidy(lm(as.formula(formula_str), data = .x))) %>%
     filter(term == term_filter) %>%
     ungroup() %>%
@@ -272,7 +332,8 @@ plot_volcano <- function(clr_res, x_label, title,
         TRUE ~ "Not significant"
       )
     ) %>%
-    ggplot(aes(x = estimate, y = neg_log10_q, color = direction)) +
+    ggplot(aes(x = estimate, y = neg_log10_q, color = direction,
+               label = ifelse(!is.na(Species) & Species != "", Species, Genus))) +
       geom_point(alpha = 0.6, size = 2) +
       scale_color_manual(values = c(setNames("#E74C3C", pos_label),
                                     setNames("#3498DB", neg_label),
@@ -292,8 +353,11 @@ plot_top_taxa <- function(clr_res, n = 10, x_label, title,
     clr_res %>% filter(q_value < 0.05) %>% arrange(-estimate) %>% head(n)
   ) %>%
     distinct() %>%
-    mutate(direction = ifelse(estimate > 0, pos_label, neg_label)) %>%
-    ggplot(aes(x = reorder(Species, estimate), y = estimate, fill = direction)) +
+    mutate(
+      direction    = ifelse(estimate > 0, pos_label, neg_label),
+      display_name = ifelse(!is.na(Species) & Species != "", Species, Genus)
+    ) %>%
+    ggplot(aes(x = reorder(display_name, estimate), y = estimate, fill = direction)) +
       geom_col() +
       coord_flip() +
       scale_fill_manual(values = c(setNames(pos_color, pos_label),
@@ -308,21 +372,17 @@ run_rda <- function(ps_clr, formula_str, covariates) {
   meta_clr <- as(sample_data(ps_clr), "matrix") %>% as.data.frame() %>%
   mutate(
         across(c(Host.age, BMI, Nr..reads.sequenced), as.numeric),
-        # Explicitly set factor levels to match run_clr_lm
+        across(c(Host.age, BMI, Nr..reads.sequenced), ~ scale(.x)[, 1]),
         Sex             = factor(Sex,             levels = c("Female", "Male")),
         Disease.MESH.ID = factor(Disease.MESH.ID, levels = c("D006262", "D003924")),
         Country         = factor(Country,         levels = c("China", "Europe", "United States of America"))
       )
-
   na_idx       <- apply(meta_clr[, covariates, drop = FALSE], 1, anyNA)
   clr_clean    <- otu_clr[!na_idx, ]
   meta_clean   <- meta_clr[!na_idx, ]
-
   cat("Samples removed due to NAs:", sum(na_idx), "\n")
   cat("Samples retained:", nrow(clr_clean), "\n")
-
   rda_fit <- rda(as.formula(paste("clr_clean ~", formula_str)), data = meta_clean)
-
   list(rda = rda_fit, clr_mat = clr_clean, meta = meta_clean)
 }
 
@@ -364,8 +424,8 @@ plot_rda_biplot <- function(rda_obj, meta_df,
     rownames_to_column("taxon") %>%
     # Use the global 'tax' matrix directly to look up Genus names safely
     left_join(tax %>% rownames_to_column("taxon"), by = "taxon") %>% 
-    head(10) %>% # Take top 10 rows for clean biplot plotting
-    mutate(label = Species) # Use Genus instead of species since this is genus-level analysis
+    head(10) %>%
+    mutate(label = ifelse(!is.na(Species) & Species != "", Species, Genus))
 
   # Scale coordinates for visualization consistency
   site_range  <- max(abs(c(site_scores$RDA1, site_scores$RDA2)))
@@ -404,12 +464,16 @@ plot_rda_biplot <- function(rda_obj, meta_df,
     labs(x = paste0("RDA1 (", pct1, "% of total variance)"),
          y = paste0("RDA2 (", pct2, "% of total variance)"),
          title = title) +
-    theme_bw()
+  theme_bw() +
+  theme(aspect.ratio = 1) +
+  coord_fixed()
 
   if (!is.null(shape_var) && !is.null(shape_values)) {
     p <- p + scale_shape_manual(values = shape_values)
   }
   p
+  
+
 }
 # Join RDA taxon loadings with CLR univariate estimates and flag agreement
 compare_rda_clr <- function(rda_obj, clr_res, tax_df, rda1_sign = 1) {
@@ -419,7 +483,7 @@ compare_rda_clr <- function(rda_obj, clr_res, tax_df, rda1_sign = 1) {
   tibble(taxon = names(taxon_scores), rda1_loading = taxon_scores) %>%
     left_join(tax_df %>% rownames_to_column("taxon"), by = "taxon") %>%
     left_join(
-      clr_res %>% select(taxon, Species,
+      clr_res %>% select(taxon, Phylum, Genus,
                          clr_estimate = estimate, clr_q = q_value),
       by = "taxon"
     ) %>%
@@ -461,6 +525,103 @@ run_wilcoxon <- function(ps_rel, group_var, pos_level, neg_level) {
 
 # Scatter plot: Wilcoxon log2FC vs CLR estimate, coloured by significance category
 # Follows the cross-method comparison in differential_abundance.Rmd
+join_three_methods <- function(wilcox_res, glm_res, clr_res) {
+  wilcox_res %>%
+    select(taxon, Genus, Species,
+           wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
+    left_join(
+      glm_res %>% select(taxon, glm_estimate = estimate, glm_q = q_value),
+      by = "taxon"
+    ) %>%
+    left_join(
+      clr_res %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
+      by = "taxon"
+    ) %>%
+    mutate(
+      sig_wilcox = wilcox_q < 0.05,
+      sig_glm    = glm_q    < 0.05,
+      sig_clr    = clr_q    < 0.05,
+      sig_category = case_when(
+        sig_wilcox & sig_glm & sig_clr ~ "All three",
+        sig_wilcox & sig_clr           ~ "Wilcoxon + CLR",
+        sig_wilcox & sig_glm           ~ "Wilcoxon + GLM",
+        sig_glm    & sig_clr           ~ "GLM + CLR",
+        sig_wilcox                     ~ "Wilcoxon only",
+        sig_glm                        ~ "GLM only",
+        sig_clr                        ~ "CLR only",
+        TRUE                           ~ "Not significant"
+      )
+    )
+}
+
+# Signed -log10(q) heatmap across all three methods, for taxa significant in
+# at least one. Mirrors the heatmap from differential_abundance.Rmd.
+plot_method_heatmap <- function(comp_df, pos_direction, neg_direction, title) {
+  heatmap_data <- comp_df %>%
+    filter(sig_wilcox | sig_glm | sig_clr) %>%
+    mutate(display_name = ifelse(!is.na(Species) & Species != "", Species, Genus)) %>%
+    select(display_name,
+           wilcox_log2fc, glm_estimate, clr_estimate,
+           wilcox_q, glm_q, clr_q) %>%
+    rename(Genus = display_name) %>%
+    pivot_longer(
+      cols      = c(wilcox_q, glm_q, clr_q),
+      names_to  = "method", values_to = "q_value"
+    ) %>%
+    mutate(
+      effect = case_when(
+        method == "wilcox_q" ~ wilcox_log2fc,
+        method == "glm_q"    ~ glm_estimate,
+        method == "clr_q"    ~ clr_estimate
+      ),
+      signed_neg_log10_q = sign(effect) * pmin(-log10(q_value), 10),
+      method = factor(method,
+                      levels = c("wilcox_q", "glm_q", "clr_q"),
+                      labels = c("Wilcoxon", "GLM (rel.)", "CLR"))
+    )
+
+  taxon_order <- heatmap_data %>%
+    group_by(Genus) %>%
+    summarise(mean_signed = mean(signed_neg_log10_q, na.rm = TRUE), .groups = "drop") %>%
+    arrange(mean_signed) %>%
+    pull(Genus)
+
+  heatmap_data %>%
+    mutate(Species = factor(Genus, levels = taxon_order)) %>%
+    ggplot(aes(x = method, y = Genus, fill = signed_neg_log10_q)) +
+      geom_tile(color = "white", linewidth = 0.5) +
+      geom_text(aes(label = ifelse(q_value < 0.05, "*", "")),
+                color = "black", size = 3) +
+      scale_fill_gradient2(
+        low      = "#C0392B", mid = "white", high = "#3498DB",
+        midpoint = 0, limits = c(-10, 10),
+        name     = "Signed\n-log10(q)",
+        breaks   = c(-10, -5, 0, 5, 10),
+        labels   = c(paste0("-10\n(", neg_direction, ")"), "-5",
+                     "0", "5",
+                     paste0("10\n(", pos_direction, ")"))
+      ) +
+      labs(x = "Method", y = NULL, title = title,
+           subtitle = paste0("Blue = ", neg_direction,
+                             ", Red = ", pos_direction,
+                             " | * = q < 0.05")) +
+      theme_bw() +
+      theme(axis.text.y = element_text(size = 7, face = "italic"))
+}
+
+# n_sig summary table across all three methods
+summarise_n_sig <- function(comp_df) {
+  tibble(
+    method        = c("Wilcoxon", "GLM (rel. abundance)", "CLR"),
+    n_significant = c(
+      sum(comp_df$wilcox_q < 0.05, na.rm = TRUE),
+      sum(comp_df$glm_q    < 0.05, na.rm = TRUE),
+      sum(comp_df$clr_q    < 0.05, na.rm = TRUE)
+    )
+  )
+}
+
+# Plot wilcoxon clr comparison
 plot_wilcox_clr_comparison <- function(wilcox_res, clr_res,
                                        wilcox_x_label, clr_y_label, title) {
   wilcox_res %>%
@@ -519,17 +680,17 @@ and non-diabetics (D006262) across all countries?
 
 ### Barplot (relative abundance, n = 50 sample)
 ```{r a1-barplot, fig.width=10, fig.height=5}
-ps_genus_global <- tax_glom(global_t$rel, taxrank = "Genus")
-ps_genus_sampled <- sample_ps(ps_genus_global, size = 50)
+ps_species_global <- tax_glom(global_t$rel, taxrank = "Species")
+ps_species_sampled <- sample_ps(ps_species_global, size = 50)
 
-plot_bar(ps_genus_sampled, fill = "Genus") +
+plot_bar(ps_species_sampled, fill = "Species") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
   labs(title = "Relative abundance by disease status (global, n = 50)") +
   theme(axis.text.x = element_blank())
 ```
 ### Heat map
 ```{r}
-plot_heatmap(ps_genus_sampled, taxa.label = "Genus", sample.order = 'Disease.MESH.ID')
+plot_heatmap(ps_species_sampled, taxa.label = "Species", sample.order = 'Disease.MESH.ID')
 ```
 
 
@@ -552,9 +713,24 @@ run_pairwise_wilcoxon(alpha_global, "Shannon", c("Disease.MESH.ID","Country"))
 
 
 ```
+```{r}
+ggplot(alpha_global, aes(x = Country, y = Shannon)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2) +
+  theme_bw()
+
+ggplot(alpha_global, aes(x = Disease.MESH.ID, y = Shannon)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2) +
+  theme_bw()
+```
+
 
 ### Sequencing depth vs. Shannon
 Negative correlation might be due to the removal of singletons.
+
+
+
 ```{r a1-depth-shannon}
 alpha_global$reads <- sample_sums(ps_global)[alpha_global$sample_id]
 
@@ -594,6 +770,7 @@ plot_ordination(global_t$rel, ord_global, type = "samples",
   theme_bw()
 
 plot_scree(ord_global)
+
 ```
 ### NMDS based on Bray-Curtis distance
 
@@ -643,12 +820,12 @@ clr_global <- run_clr_lm(
 
 
 global_healthy_enriched <- clr_global %>%
-  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
   head(10)
 
 global_sick_enriched <- clr_global %>%
-  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(-estimate) %>%
   head(10)
 
@@ -696,7 +873,7 @@ plot_rda_biplot(
   color_var    = "Disease.MESH.ID",
   shape_var    = "Country",
   color_values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
-  shape_values = c("China" = 16, "West" = 17),
+  shape_values = c("China" = 16, "Europe" = 17),
   title        = "RDA biplot — global: disease status and country"
 )
 ```
@@ -729,7 +906,7 @@ plot_rda_clr_comparison(
 ```{r a1-rda-clr-table}
 comp_global %>%
   arrange(desc(abs(rda1_loading))) %>%
-  select(Genus, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  select(Phylum.x, Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
   head(20)
 ```
 
@@ -741,13 +918,17 @@ comp_global %>%
 diabetics and non-diabetics?
 
 ## Visualisation
-
 ### Barplot (relative abundance, n = 50 sample)
 ```{r a2-barplot, fig.width=10, fig.height=5}
-ps_genus_china  <- tax_glom(china_t$rel, taxrank = "Genus")
-china_genus_sampled <- sample_ps(ps_genus_china, size = min(50, nsamples(ps_genus_china)))
+ps_species_china  <- tax_glom(china_t$rel, taxrank = "Species")
+ps_species_china_sick  <- subset_samples(ps_species_china, Disease.MESH.ID == "D003924")
+ps_species_china_healthy  <- subset_samples(ps_species_china, Disease.MESH.ID == "D006262")
+ps_species_china_sick_sampled <- sample_ps(ps_species_china_sick, size = min(15, nsamples(ps_species_china_sick)))
+ps_species_china_healthy_sampled <- sample_ps(ps_species_china_healthy, size = min(15, nsamples(ps_species_china_healthy)))
 
-plot_bar(china_genus_sampled, fill = "Genus") +
+china_species_sampled <- merge_phyloseq(ps_species_china_healthy_sampled, ps_species_china_sick_sampled )
+
+plot_bar(china_species_sampled, fill = "Species") +
   facet_nested(~ Disease.MESH.ID, scales = "free_x") +
   labs(title = "Relative abundance by disease status (China)") +
   theme(axis.text.x = element_blank())
@@ -762,8 +943,13 @@ plot_richness(ps_china, measures = "Shannon", color = "Disease.MESH.ID") +
   labs(title = "Shannon diversity — China") +
   theme_bw()
 
+plot_richness(china_t$pa, measures = "Observed", color = "Disease.MESH.ID") +
+  labs(title = "Observed richness — China") +
+  theme_bw()
+
 run_kruskal(alpha_china, "Shannon", "Disease.MESH.ID")
 run_pairwise_wilcoxon(alpha_china, "Shannon", "Disease.MESH.ID")
+
 ```
 ```{r}
 ggplot(alpha_china, aes(x = Disease.MESH.ID, y = Shannon, fill = Disease.MESH.ID)) +
@@ -771,7 +957,14 @@ ggplot(alpha_china, aes(x = Disease.MESH.ID, y = Shannon, fill = Disease.MESH.ID
   geom_jitter(width = 0.2, alpha = 0.5) +
   theme_bw() +
   scale_fill_manual(values = c("#E74C3C", "#3498DB"))
+
+ggplot(alpha_china, aes(x = Disease.MESH.ID, y = Observed, fill = Disease.MESH.ID)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2, alpha = 0.5) +
+  theme_bw() +
+  scale_fill_manual(values = c("#E74C3C", "#3498DB"))
 ```
+
 
 
 ### Sequencing depth vs. Shannon
@@ -800,19 +993,6 @@ jaccard_dist <- distance(
 )
 ```
 
-### PCoA — Bray-Curtis
-```{r a2-pcoa, fig.width=8, fig.height=5}
-bray_china <- distance(china_t$rel, method = "bray")
-ord_china  <- ordinate(china_t$rel, method = "PCoA", distance = bray_china)
-
-plot_ordination(china_t$rel, ord_china, type = "samples",
-                color = "Disease.MESH.ID") +
-  scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
-                     labels = c("Diabetic", "Healthy")) +
-  labs(title = "PCoA (Bray-Curtis) — China",
-       color = "Status") +
-  theme_bw()
-```
 
 ### NMDS based on Bray-Curtis distance
 
@@ -836,14 +1016,63 @@ plot_ordination(
 
 ### PERMANOVA + Dispersion
 ```{r a2-permanova}
+bray_china <- distance(china_t$rel, method = "bray")
+ord_china  <- ordinate(china_t$rel, method = "PCoA", distance = bray_china)
+
 sample_df_china <- sample_data(china_t$rel) %>% data.frame()
 
 adonis2(bray_china ~ Disease.MESH.ID,
         data = sample_df_china, permutations = 999)
 
+adonis2(bray_china ~ Nr..reads.sequenced,
+        data = sample_df_china, permutations = 999)
+
 disp_china <- betadisper(bray_china, sample_df_china$Disease.MESH.ID)
 anova(disp_china)
 plot(disp_china, main = "Dispersion — China by disease status")
+```
+
+### PCoA — Bray-Curtis
+```{r a2-pcoa, fig.width=8, fig.height=5}
+plot_ordination(china_t$rel, ord_china, type = "samples",
+                color = "Disease.MESH.ID") +
+  stat_ellipse(aes(color = Disease.MESH.ID), 
+               type = "norm",    # or "t" for robust ellipses
+               level = 0.95) +   # 95% confidence ellipse
+  scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
+                     labels = c("Diabetic", "Healthy")) +
+  labs(title = "PCoA (Bray-Curtis) — China",
+       color = "Status") +
+  theme_bw()
+
+```
+
+### Jaccard
+```{r a2-permanovaj}
+jaccard_china <- distance(china_t$rel, method = "jaccard")
+ord_j_china  <- ordinate(china_t$rel, method = "PCoA", distance = jaccard_china)
+
+sample_df2_china <- sample_data(china_t$pa) %>% data.frame()
+
+adonis2(jaccard_china ~ Disease.MESH.ID,
+        data = sample_df2_china, permutations = 999)
+
+dispj_china <- betadisper(jaccard_china, sample_df_china$Disease.MESH.ID)
+anova(dispj_china)
+plot(dispj_china, main = "Dispersion — China by disease status")
+
+
+plot_ordination(china_t$rel, ord_j_china, type = "samples",
+                color = "Disease.MESH.ID") +
+  stat_ellipse(aes(color = Disease.MESH.ID), 
+               type = "norm",    # or "t" for robust ellipses
+               level = 0.95) +   # 95% confidence ellipse
+  scale_color_manual(values = c("D003924" = "#E74C3C", "D006262" = "#3498DB"),
+                     labels = c("Diabetic", "Healthy")) +
+  labs(title = "PCoA (Jaccard) — China",
+       color = "Status") +
+  theme_bw()
+
 ```
 
 ## Wilcoxon Rank-Sum Test
@@ -858,6 +1087,14 @@ wilcox_china <- run_wilcoxon(
   pos_level = "D003924",   # diabetic = numerator
   neg_level = "D006262"    # healthy  = denominator
 )
+
+wilcoxon_china_sig <- wilcox_china %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(log2_fc > 0, "Sick-enriched", "Healthy-enriched")) %>%
+  select(Genus, Species, direction, log2_fc, p_value, q_value) %>%
+  arrange(log2_fc)
+
+write.csv(wilcoxon_china_sig, "analysisa_sig_species_wilcox.csv")
 
 # Top diabetic-enriched (positive log2FC)
 wilcox_china %>%
@@ -905,8 +1142,11 @@ bind_rows(
   wilcox_china %>% filter(q_value < 0.05) %>% arrange(log2_fc)  %>% head(10)
 ) %>%
   distinct() %>%
-  mutate(direction = ifelse(log2_fc > 0, "Diabetic-enriched", "Healthy-enriched")) %>%
-  ggplot(aes(x = reorder(Species, log2_fc), y = log2_fc, fill = direction)) +
+  mutate(
+    direction    = ifelse(log2_fc > 0, "Diabetic-enriched", "Healthy-enriched"),
+    display_name = ifelse(!is.na(Species) & Species != "", Species, Genus)
+  ) %>%
+  ggplot(aes(x = reorder(display_name, log2_fc), y = log2_fc, fill = direction)) +
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c(
@@ -919,6 +1159,53 @@ bind_rows(
          title = "Top differentially abundant taxa (Wilcoxon) — China") +
     theme_bw()
 ```
+## GLM (with relative abundances)
+```{r}
+china_logrel <- transform_sample_counts(china_t$rel, function(x) {x <- x + 1e-9; log(x)})
+                                        
+rel_china <- run_clr_lm(
+  ps_clr      = china_logrel,
+  formula_str = "clr ~ sex + status + age + depth",
+  term_filter = "statusD003924"
+)
+
+rel_china_sig <- rel_china %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(estimate > 0, "Sick-enriched", "Healthy-enriched")) %>%
+  select(Genus, Species, direction, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate)
+
+write.csv(rel_china_sig, file = "a2_sig_species_relative.csv")
+
+rel_china_healthy_enriched <- rel_china %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate) %>%
+  head(10)
+
+rel_china_sick_enriched <- rel_china %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(-estimate) %>%
+  head(10)
+
+rel_china_healthy_enriched
+rel_china_sick_enriched
+```
+
+### Plots
+```{r plotschina}
+plot_volcano(rel_china,
+             x_label   = "Relative abundance estimate (diabetic vs healthy, China)",
+             title     = "Relative abundance volcano — China: diabetic vs healthy",
+             pos_label = "Diabetic-enriched",
+             neg_label = "Healthy-enriched")
+
+plot_top_taxa(rel_china,
+              x_label   = "Relative abundances estimate (diabetic vs healthy, China)",
+              title     = "Top differentially abundant taxa — China",
+              pos_label = "Diabetic-enriched",
+              neg_label = "Healthy-enriched")
+```
+
 
 ## Compositional Analysis — CLR Linear Model
 
@@ -930,6 +1217,13 @@ clr_china <- run_clr_lm(
   term_filter = "statusD003924"
 )
 
+clr_china_sig <- clr_china %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(estimate > 0, "Healthy-enriched", "Sick-enriched")) %>%
+  select(Genus, Species, direction, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate)
+
+write.csv(clr_china_sig, "analysis2_significant_taxa.csv", row.names = FALSE)
 
 china_healthy_enriched <- clr_china %>%
   select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
@@ -960,37 +1254,31 @@ plot_top_taxa(clr_china,
               neg_label = "Healthy-enriched")
 ```
 
-### Wilcoxon vs CLR Comparison
+## Compare three methods
 
 ```{r a2-wilcox-clr, fig.width=8, fig.height=5}
-# Significant taxa summary
-tibble(
-  method        = c("Wilcoxon", "CLR"),
-  n_significant = c(
-    sum(wilcox_china$q_value < 0.05, na.rm = TRUE),
-    sum(clr_china$q_value    < 0.05, na.rm = TRUE)
-  )
+comp3_china <- join_three_methods(
+  wilcox_res = wilcox_china,
+  glm_res    = rel_china,
+  clr_res    = clr_china
 )
 
-# Consensus taxa significant in both methods
-wilcox_china %>%
-  select(taxon, Genus, Species, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
-  inner_join(
-    clr_china %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
-    by = "taxon"
-  ) %>%
-  filter(wilcox_q < 0.05, clr_q < 0.05) %>%
-  mutate(direction_agreement = sign(wilcox_log2fc) == sign(clr_estimate)) %>%
-  arrange(wilcox_q)
+# How many taxa does each method detect?
+summarise_n_sig(comp3_china)
 
-# Cross-method effect size scatter
-plot_wilcox_clr_comparison(
-  wilcox_res    = wilcox_china,
-  clr_res       = clr_china,
-  wilcox_x_label = "Wilcoxon log2 fold change (diabetic vs healthy, China)",
-  clr_y_label    = "CLR estimate (diabetic vs healthy, China)",
-  title          = "Effect size agreement: Wilcoxon vs CLR — China"
-)
+# Consensus taxa significant in all three methods
+comp3_china %>%
+  filter(sig_wilcox, sig_glm, sig_clr) %>%
+  mutate(direction_agreement =
+           sign(wilcox_log2fc) == sign(glm_estimate) &
+           sign(glm_estimate)  == sign(clr_estimate)) %>%
+  select(Genus, Species, wilcox_log2fc, glm_estimate, clr_estimate,
+         wilcox_q, glm_q, clr_q, direction_agreement) %>%
+  arrange(clr_q)
+
+plot_method_heatmap(comp3_china, "Sick-enriched", "Healthy-enriched", "Comparison between three methods, analysis A")
+
+plot_wilcox_clr_comparison(wilcox_china, clr_china, "Wilcoxon log2 fold change", "CLR estimate", "Comparison between Wilcoxon and CLR for analysis A")
 ```
 
 ## Constrained Ordination — RDA
@@ -1009,7 +1297,7 @@ anova(rda_china_out$rda, permutations = 999)
 anova(rda_china_out$rda, by = "term", permutations = 999)
 ```
 
-```{r a2-rda-biplot, fig.width=9, fig.height=6}
+```{r a2-rda-biplot, fig.width=9, fig.height=8}
 plot_rda_biplot(
   rda_obj      = rda_china_out$rda,
   meta_df      = rda_china_out$meta,
@@ -1049,8 +1337,8 @@ plot_rda_clr_comparison(
 ```{r a2-rda-clr-table}
 comp_china %>%
   arrange(desc(abs(rda1_loading))) %>%
-  select(Genus, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
-  head(20)
+  select(Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  head(5)
 ```
 
 # Analysis 3: East vs. West — Geographical Differences in Diabetics
@@ -1062,10 +1350,18 @@ in gut microbiome composition between Western and Chinese (Eastern) populations?
 
 ### Barplot (relative abundance, n = 50 sample)
 ```{r a3-barplot, fig.width=10, fig.height=5}
-ps_genus_we  <- tax_glom(we_t$rel, taxrank = "Genus")
-we_genus_sampled <- sample_ps(ps_genus_we, size = min(50, nsamples(ps_genus_we)))
+ps_species_europe  <- subset_samples(ps_we, Country == "Europe")
+ps_species_asia  <- subset_samples(ps_we, Country == "China")
+ps_species_europe <- sample_ps(ps_species_europe, size = min(15, nsamples(ps_species_europe)))
+ps_species_asia <- sample_ps(ps_species_asia, size = min(15, nsamples(ps_species_asia)))
 
-plot_bar(we_genus_sampled, fill = "Genus") +
+we_species_sampled <- merge_phyloseq(ps_species_asia, ps_species_europe)
+
+
+ps_species_we  <- tax_glom(we_t$rel, taxrank = "Species")
+we_species_sampled <- sample_ps(ps_species_we, size = min(50, nsamples(ps_species_we)))
+
+plot_bar(we_species_sampled, fill = "Species") +
   facet_nested(~ Country, scales = "free_x") +
   labs(title = "Relative abundance by geography (diabetics only)") +
   theme(axis.text.x = element_blank())
@@ -1081,9 +1377,16 @@ plot_richness(ps_we, measures = "Shannon", color = "Country") +
   labs(title = "Shannon diversity — diabetics by geography") +
   theme_bw()
 
+plot_richness(we_t$pa, measures = "Observed", color = "Country") +
+  scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
+  labs(title = "Observed richness — diabetics by geography") +
+  theme_bw()
+
+
 run_kruskal(alpha_we, "Shannon", "Country")
 run_pairwise_wilcoxon(alpha_we, "Shannon", "Country")
 ```
+
 ```{r}
 ggplot(alpha_we, aes(x = Country, y = Shannon, fill = Country)) +
   geom_boxplot() +
@@ -1091,6 +1394,7 @@ ggplot(alpha_we, aes(x = Country, y = Shannon, fill = Country)) +
   theme_bw() +
   scale_fill_manual(values = c("#E74C3C", "#3498DB"))
 ```
+
 
 
 ### Sequencing depth vs. Shannon
@@ -1121,13 +1425,29 @@ jaccard_dist <- distance(
 ```
 
 ### PCoA — Bray-Curtis
-```{r a3-pcoa, fig.width=8, fig.height=5}
+```{r a3-pcoabray, fig.width=8, fig.height=5}
 bray_we <- distance(we_t$rel, method = "bray")
 ord_we  <- ordinate(we_t$rel, method = "PCoA", distance = bray_we)
 
 plot_ordination(we_t$rel, ord_we, type = "samples", color = "Country") +
+    stat_ellipse(aes(color = Country), 
+               type = "norm",    # or "t" for robust ellipses
+               level = 0.95) +   # 95% confidence ellipse
   scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
   labs(title = "PCoA (Bray-Curtis) — diabetics: East vs. West") +
+  theme_bw()
+```
+
+```{r a3-pcoa, fig.width=8, fig.height=5}
+jaccard_we <- distance(we_t$pa, method = "jaccard")
+ordj_we  <- ordinate(we_t$pa, method = "PCoA", distance = jaccard_we)
+
+plot_ordination(we_t$pa, ordj_we, type = "samples", color = "Country") +
+    stat_ellipse(aes(color = Country), 
+               type = "norm",    # or "t" for robust ellipses
+               level = 0.95) +   # 95% confidence ellipse
+  scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
+  labs(title = "PCoA (Jaccard) — diabetics: East vs. West") +
   theme_bw()
 ```
 
@@ -1152,13 +1472,26 @@ plot_ordination(
 ```
 
 ### PERMANOVA + Dispersion
-```{r a3-permanova}
+```{r a3-permanovabray}
 sample_df_we <- sample_data(we_t$rel) %>% data.frame()
 
 adonis2(bray_we ~ Country,
         data = sample_df_we, permutations = 999)
 
+adonis2(bray_we ~ Nr..reads.sequenced,
+        data = sample_df_we, permutations = 999)
+
 disp_we <- betadisper(bray_we, sample_df_we$Country)
+anova(disp_we)
+plot(disp_we, main = "Dispersion — diabetics by geography")
+```
+```{r a3-permanova}
+sample_df2_we <- sample_data(we_t$pa) %>% data.frame()
+
+adonis2(jaccard_we ~ Country,
+        data = sample_df2_we, permutations = 999)
+
+disp_we <- betadisper(jaccard_we, sample_df2_we$Country)
 anova(disp_we)
 plot(disp_we, main = "Dispersion — diabetics by geography")
 ```
@@ -1175,6 +1508,14 @@ wilcox_we <- run_wilcoxon(
   pos_level = "Europe",   # Europe = numerator
   neg_level = "China"     # China  = denominator
 )
+
+wilcoxon_we_sig <- wilcox_we %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(log2_fc > 0, "Europe-enriched", "China-enriched")) %>%
+  select(Genus, Species, direction, log2_fc, p_value, q_value) %>%
+  arrange(log2_fc)
+
+write.csv(wilcoxon_we_sig, "analysisb_sig_species_wilcox.csv")
 
 # Top Europe-enriched (positive log2FC)
 wilcox_we %>%
@@ -1222,8 +1563,11 @@ bind_rows(
   wilcox_we %>% filter(q_value < 0.05) %>% arrange(log2_fc)  %>% head(10)
 ) %>%
   distinct() %>%
-  mutate(direction = ifelse(log2_fc > 0, "Europe-enriched", "China-enriched")) %>%
-  ggplot(aes(x = reorder(Species, log2_fc), y = log2_fc, fill = direction)) +
+  mutate(
+    direction    = ifelse(log2_fc > 0, "Europe-enriched", "China-enriched"),
+    display_name = ifelse(!is.na(Species) & Species != "", Species, Genus)
+  ) %>%
+  ggplot(aes(x = reorder(display_name, log2_fc), y = log2_fc, fill = direction)) +
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c(
@@ -1237,6 +1581,61 @@ bind_rows(
     theme_bw()
 ```
 
+## GLM on relative abundance
+```{r}
+# 1. Run GLM on relative abundances for Analysis 3
+we_logrel <- transform_sample_counts(we_t$rel, function(x) {x <- x + 1e-9; log(x)})
+
+
+rel_we <- run_clr_lm(
+  ps_clr      = we_t$rel,
+  formula_str = "clr ~ country + depth",
+  term_filter = "countryEurope"
+)
+
+
+rel_we_sig <- rel_we %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(estimate > 0, "Healthy-enriched", "Sick-enriched")) %>%
+  select(Genus, Species, direction, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate)
+
+write.csv(rel_we_sig, file = "a3_sig_species_relative.csv")
+
+rel_we_china_enriched <- rel_we %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate) %>%
+  head(10)
+
+rel_we_europe_enriched <- rel_we %>%
+  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(-estimate) %>%
+  head(10)
+
+rel_we_china_enriched
+rel_we_europe_enriched
+```
+
+### Plots
+```{r}
+plot_volcano(rel_we,
+             x_label   = "Relative abundance estimate (Europe vs China, diabetics)",
+             title     = "Relative abundance volcano — diabetics: Europe vs. China",
+             pos_label = "West-enriched",
+             neg_label = "China-enriched")
+
+plot_top_taxa(rel_we,
+              x_label   = "Relative abundance estimate (Europe vs China, diabetics)",
+              title     = "Top differentially abundant taxa — China vs. Europe (diabetics)",
+              pos_label = "Europe-enriched",
+              neg_label = "China-enriched",
+              pos_color = "#3498DB",
+              neg_color = "#E74C3C")
+```
+
+
+
+
 ## Compositional Analysis — CLR Linear Model (Constrained Ordination — RDA)
 
 The model adjusts for sex, age, BMI, and sequencing depth. The term of interest
@@ -1245,19 +1644,25 @@ is `countryWest` (West relative to China).
 ```{r a3-clr}
 clr_we <- run_clr_lm(
   ps_clr      = we_t$clr,
-  formula_str = "clr ~ country + age + depth",
+  formula_str = "clr ~ country + depth",
   term_filter = "countryEurope"
 )
 
-otu_table(we_t$clr)
+clr_we_sig <- clr_we %>%
+  filter(q_value < 0.05) %>%
+  mutate(direction = ifelse(estimate > 0, "Europe-enriched", "China-enriched")) %>%
+  select(Genus, direction, estimate, std.error, statistic, p.value, q_value) %>%
+  arrange(estimate)
+
+write.csv(clr_we_sig, "analysis3_significant_taxa.csv", row.names = FALSE)
 
 we_china_enriched <- clr_we %>%
-  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(estimate) %>%
   head(10)
 
 we_europe_enriched <- clr_we %>%
-  select(taxon, Genus, Species, estimate, std.error, statistic, p.value, q_value) %>%
+  select(taxon, Genus, estimate, std.error, statistic, p.value, q_value) %>%
   arrange(-estimate) %>%
   head(10)
 
@@ -1274,7 +1679,7 @@ plot_volcano(clr_we,
 
 plot_top_taxa(clr_we,
               x_label   = "CLR estimate (Europe vs China, diabetics)",
-              title     = "Top differentially abundant taxa — Europe vs. China (diabetics)",
+              title     = "Top differentially abundant taxa — China vs. Europe (diabetics)",
               pos_label = "Europe-enriched",
               neg_label = "China-enriched",
               pos_color = "#3498DB",
@@ -1284,34 +1689,40 @@ plot_top_taxa(clr_we,
 ### Wilcoxon vs CLR Comparison
 
 ```{r a3-wilcox-clr, fig.width=8, fig.height=5}
-# Significant taxa summary
-tibble(
-  method        = c("Wilcoxon", "CLR"),
-  n_significant = c(
-    sum(wilcox_we$q_value < 0.05, na.rm = TRUE),
-    sum(clr_we$q_value    < 0.05, na.rm = TRUE)
-  )
+# 2. Join all three methods using the helper function
+comp3_we <- join_three_methods(
+  wilcox_res = wilcox_we,
+  glm_res    = rel_we,
+  clr_res    = clr_we
 )
 
-# Consensus taxa significant in both methods
-wilcox_we %>%
-  select(taxon, Genus, Species, wilcox_log2fc = log2_fc, wilcox_q = q_value) %>%
-  inner_join(
-    clr_we %>% select(taxon, clr_estimate = estimate, clr_q = q_value),
-    by = "taxon"
-  ) %>%
-  filter(wilcox_q < 0.05, clr_q < 0.05) %>%
-  mutate(direction_agreement = sign(wilcox_log2fc) == sign(clr_estimate)) %>%
-  arrange(wilcox_q)
+# 3. Print out how many significant taxa each method identifies
+cat("Number of significant taxa detected by each method (Europe vs China among Diabetics):\n")
+print(summarise_n_sig(comp3_we))
 
-# Cross-method effect size scatter
-plot_wilcox_clr_comparison(
-  wilcox_res     = wilcox_we,
-  clr_res        = clr_we,
-  wilcox_x_label = "Wilcoxon log2 fold change (Europe vs China, diabetics)",
-  clr_y_label    = "CLR estimate (Europe vs China, diabetics)",
-  title          = "Effect size agreement: Wilcoxon vs CLR — East vs. West"
+# 4. Extract consensus taxa significant in all three models
+consensus_we <- comp3_we %>%
+  filter(sig_wilcox, sig_glm, sig_clr) %>%
+  mutate(direction_agreement =
+           sign(wilcox_log2fc) == sign(glm_estimate) &
+           sign(glm_estimate)  == sign(clr_estimate))
+
+cat("\nConsensus taxa significant in ALL 3 methods:\n")
+consensus_we %>%
+  select(Genus, wilcox_log2fc, glm_estimate, clr_estimate,
+         wilcox_q, glm_q, clr_q, direction_agreement) %>%
+  arrange(clr_q)
+
+# 5. Plot the signed -log10(q) heatmap
+plot_method_heatmap(
+  comp_df       = comp3_we, 
+  pos_direction = "Europe-enriched", 
+  neg_direction = "China-enriched", 
+  title         = "Method Agreement Heatmap — Diabetics: Europe vs. China"
 )
+
+plot_wilcox_clr_comparison(wilcox_we, clr_we, "Wilcoxon log2 fold change", "CLR estimate", "Comparison between Wilcoxon and CLR for analysis B")
+
 ```
 
 ### PCA of CLR Profiles
@@ -1330,7 +1741,7 @@ as.data.frame(pca_we$x[, 1:2]) %>%
     scale_color_manual(values = c("China" = "#E74C3C", "Europe" = "#3498DB")) +
     labs(x = paste0("PC1 (", pca_var[1], "%)"),
          y = paste0("PC2 (", pca_var[2], "%)"),
-         title = "PCA of CLR profiles — diabetics: East vs. West") +
+         title = "PCA of CLR profiles — diabetics: China vs. Europe") +
     theme_bw()
 ```
 
@@ -1389,6 +1800,6 @@ plot_rda_clr_comparison(
 ```{r a3-rda-clr-table}
 comp_we %>%
   arrange((abs(clr_q))) %>%
-  select(taxon, Genus, Species.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
+  select(taxon, Phylum.x, Genus.x, rda1_loading, clr_estimate, clr_q, direction_agreement) %>%
   head(30)
 ```

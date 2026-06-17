@@ -1,0 +1,6 @@
+"","Genus","Species","direction","log2_fc","p_value","q_value"
+"1","g__Roseburia","s__Roseburia intestinalis","Healthy-enriched",-2.17796066765185,1.02343186217766e-05,0.00158631938637538
+"2","g__Prevotella","s__Prevotella stercorea","Healthy-enriched",-2.11138102179387,0.00116568799905224,0.0401679216849502
+"3","g__Faecalibacterium","s__Faecalibacterium duncaniae","Healthy-enriched",-0.553918540535171,0.00053928315990065,0.0278629632615336
+"4","g__Bifidobacterium","s__Bifidobacterium longum","Sick-enriched",1.71301356651813,0.00129573940919194,0.0401679216849502
+"5","g__Enterocloster","s__Enterocloster bolteae","Sick-enriched",5.36090539503084,0.000257046936273531,0.0199211375611986
